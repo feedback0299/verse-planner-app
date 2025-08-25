@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useVerseContext } from '@/contexts/VerseContext';
 
-// Demo Bible verses data
+// Demo Bible verses data (fallback for days without user entries)
 const demoVerses = {
   '2025-01-01': { book: 'Psalms', verse: '23:1', text: 'The Lord is my shepherd; I shall not want.' },
   '2025-01-02': { book: 'John', verse: '3:16', text: 'For God so loved the world that he gave his one and only Son...' },
@@ -23,6 +24,7 @@ const monthNames = [
 ];
 
 const DailyVerseCalendar = () => {
+  const { verseEntries } = useVerseContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -61,7 +63,9 @@ const DailyVerseCalendar = () => {
   const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
   const selectedDateKey = formatDateKey(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-  const selectedVerse = demoVerses[selectedDateKey];
+  // First check user entries, then fallback to demo verses
+  const userVerse = verseEntries[selectedDateKey];
+  const selectedVerse = userVerse || demoVerses[selectedDateKey];
 
   return (
     <div className="min-h-screen bg-gradient-peaceful p-4">
@@ -118,7 +122,9 @@ const DailyVerseCalendar = () => {
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const day = i + 1;
                 const dateKey = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day);
-                const hasVerse = demoVerses[dateKey];
+                const hasUserVerse = verseEntries[dateKey];
+                const hasDemoVerse = demoVerses[dateKey];
+                const hasVerse = hasUserVerse || hasDemoVerse;
                 const isToday = isCurrentMonth && day === today.getDate();
                 const isSelected = selectedDate.getDate() === day && 
                                  selectedDate.getMonth() === currentDate.getMonth() && 

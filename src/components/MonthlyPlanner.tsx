@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Edit, Save, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit, Save, X, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-interface VerseEntry {
-  book: string;
-  verse: string;
-  note1: string;
-  note2: string;
-  note3: string;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useVerseContext, VerseEntry } from '@/contexts/VerseContext';
+import { searchBibleVerse } from '@/lib/bibleApi';
+import { useToast } from '@/hooks/use-toast';
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -21,16 +16,21 @@ const monthNames = [
 ];
 
 const MonthlyPlanner = () => {
+  const { verseEntries, addOrUpdateEntry, getEntry } = useVerseContext();
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [verseEntries, setVerseEntries] = useState<Record<string, VerseEntry>>({});
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoadingVerse, setIsLoadingVerse] = useState(false);
   const [formData, setFormData] = useState<VerseEntry>({
     book: '',
     verse: '',
+    reference: '',
+    text: '',
     note1: '',
     note2: '',
-    note3: ''
+    note3: '',
+    lastUpdated: ''
   });
 
   const getDaysInMonth = (date: Date) => {
@@ -59,47 +59,113 @@ const MonthlyPlanner = () => {
 
   const openEditDialog = (day: number) => {
     const dateKey = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const existingEntry = verseEntries[dateKey];
+    const existingEntry = getEntry(dateKey);
     
     setEditingDate(dateKey);
     setFormData(existingEntry || {
       book: '',
       verse: '',
+      reference: '',
+      text: '',
       note1: '',
       note2: '',
-      note3: ''
+      note3: '',
+      lastUpdated: ''
     });
     setIsDialogOpen(true);
   };
 
+  const searchVerse = async () => {
+    if (!formData.book || !formData.verse) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both book and verse before searching.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoadingVerse(true);
+    const reference = `${formData.book} ${formData.verse}`;
+    
+    try {
+      const verseData = await searchBibleVerse(reference);
+      
+      if (verseData) {
+        setFormData(prev => ({
+          ...prev,
+          reference: verseData.reference,
+          text: verseData.text
+        }));
+        toast({
+          title: "Verse Found!",
+          description: `Successfully loaded ${verseData.reference}`,
+        });
+      } else {
+        toast({
+          title: "Verse Not Found",
+          description: "Could not find the verse. Please check your reference format (e.g., 'John 3:16').",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Search Error",
+        description: "Failed to search for verse. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingVerse(false);
+    }
+  };
+
   const saveEntry = () => {
     if (editingDate) {
-      setVerseEntries(prev => ({
-        ...prev,
-        [editingDate]: formData
-      }));
+      if (!formData.book || !formData.verse) {
+        toast({
+          title: "Missing Information",
+          description: "Please enter at least the book and verse.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // If no text was fetched from API, create a simple reference
+      const finalData = {
+        ...formData,
+        reference: formData.reference || `${formData.book} ${formData.verse}`,
+        text: formData.text || `${formData.book} ${formData.verse}`,
+      };
+
+      addOrUpdateEntry(editingDate, finalData);
       setIsDialogOpen(false);
       setEditingDate(null);
-      setFormData({
-        book: '',
-        verse: '',
-        note1: '',
-        note2: '',
-        note3: ''
+      resetFormData();
+      
+      toast({
+        title: "Entry Saved",
+        description: "Your Bible study entry has been saved successfully.",
       });
     }
+  };
+
+  const resetFormData = () => {
+    setFormData({
+      book: '',
+      verse: '',
+      reference: '',
+      text: '',
+      note1: '',
+      note2: '',
+      note3: '',
+      lastUpdated: ''
+    });
   };
 
   const closeDialog = () => {
     setIsDialogOpen(false);
     setEditingDate(null);
-    setFormData({
-      book: '',
-      verse: '',
-      note1: '',
-      note2: '',
-      note3: ''
-    });
+    resetFormData();
   };
 
   const daysInMonth = getDaysInMonth(currentDate);
@@ -164,7 +230,7 @@ const MonthlyPlanner = () => {
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const day = i + 1;
                 const dateKey = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day);
-                const entry = verseEntries[dateKey];
+                const entry = getEntry(dateKey);
                 const isToday = isCurrentMonth && day === today.getDate();
 
                 return (
@@ -190,7 +256,7 @@ const MonthlyPlanner = () => {
                       {entry && (
                         <div className="flex-1 overflow-hidden">
                           <div className="text-xs font-medium text-spiritual-blue mb-1 truncate">
-                            {entry.book} {entry.verse}
+                            {entry.reference || `${entry.book} ${entry.verse}`}
                           </div>
                           {entry.note1 && (
                             <div className="text-xs text-muted-foreground truncate">
@@ -219,10 +285,10 @@ const MonthlyPlanner = () => {
 
         {/* Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-spiritual-blue">
-                {editingDate && verseEntries[editingDate] ? 'Edit' : 'Add'} Bible Study Entry
+                {editingDate && getEntry(editingDate) ? 'Edit' : 'Add'} Bible Study Entry
               </DialogTitle>
             </DialogHeader>
             
@@ -232,29 +298,59 @@ const MonthlyPlanner = () => {
                   <Label htmlFor="book" className="text-sm font-medium">Bible Book</Label>
                   <Input
                     id="book"
-                    placeholder="e.g., Psalms"
+                    placeholder="e.g., John"
                     value={formData.book}
                     onChange={(e) => setFormData(prev => ({ ...prev, book: e.target.value }))}
                     className="border-border"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="verse" className="text-sm font-medium">Verse</Label>
-                  <Input
-                    id="verse"
-                    placeholder="e.g., 23:1"
-                    value={formData.verse}
-                    onChange={(e) => setFormData(prev => ({ ...prev, verse: e.target.value }))}
-                    className="border-border"
-                  />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="verse" className="text-sm font-medium">Verse</Label>
+                    <Input
+                      id="verse"
+                      placeholder="e.g., 3:16"
+                      value={formData.verse}
+                      onChange={(e) => setFormData(prev => ({ ...prev, verse: e.target.value }))}
+                      className="border-border"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      size="sm"
+                      onClick={searchVerse}
+                      disabled={isLoadingVerse || !formData.book || !formData.verse}
+                      className="bg-gradient-spiritual text-primary-foreground"
+                    >
+                      {isLoadingVerse ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              {formData.text && (
+                <div>
+                  <Label className="text-sm font-medium text-spiritual-blue">Verse Text</Label>
+                  <div className="p-3 bg-spiritual-light rounded-lg border border-border">
+                    <p className="text-sm text-foreground leading-relaxed">
+                      "{formData.text}"
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      - {formData.reference}
+                    </p>
+                  </div>
+                </div>
+              )}
               
               <div>
-                <Label htmlFor="note1" className="text-sm font-medium">Note 1</Label>
+                <Label htmlFor="note1" className="text-sm font-medium">Personal Reflection</Label>
                 <Textarea
                   id="note1"
-                  placeholder="Personal reflection or study note..."
+                  placeholder="What does this verse mean to you?"
                   value={formData.note1}
                   onChange={(e) => setFormData(prev => ({ ...prev, note1: e.target.value }))}
                   className="border-border resize-none"
@@ -263,10 +359,10 @@ const MonthlyPlanner = () => {
               </div>
               
               <div>
-                <Label htmlFor="note2" className="text-sm font-medium">Note 2</Label>
+                <Label htmlFor="note2" className="text-sm font-medium">Prayer & Application</Label>
                 <Textarea
                   id="note2"
-                  placeholder="Prayer request or application..."
+                  placeholder="How will you apply this? Prayer requests?"
                   value={formData.note2}
                   onChange={(e) => setFormData(prev => ({ ...prev, note2: e.target.value }))}
                   className="border-border resize-none"
@@ -275,10 +371,10 @@ const MonthlyPlanner = () => {
               </div>
               
               <div>
-                <Label htmlFor="note3" className="text-sm font-medium">Note 3</Label>
+                <Label htmlFor="note3" className="text-sm font-medium">Additional Notes</Label>
                 <Textarea
                   id="note3"
-                  placeholder="Additional thoughts..."
+                  placeholder="Cross-references, insights, questions..."
                   value={formData.note3}
                   onChange={(e) => setFormData(prev => ({ ...prev, note3: e.target.value }))}
                   className="border-border resize-none"
