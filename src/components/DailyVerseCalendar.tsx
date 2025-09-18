@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVerseContext } from '@/contexts/VerseContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Demo Bible verses data (fallback for days without user entries)
 const demoVerses = {
@@ -18,13 +19,9 @@ const demoVerses = {
   '2025-01-10': { book: 'Ephesians', verse: '2:8-9', text: 'For it is by grace you have been saved, through faith...' },
 };
 
-const monthNames = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
-
 const DailyVerseCalendar = () => {
   const { verseEntries } = useVerseContext();
+  const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -72,8 +69,8 @@ const DailyVerseCalendar = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-spiritual-blue mb-2">Daily Bible Verses</h1>
-          <p className="text-muted-foreground">Discover God's word for each day</p>
+          <h1 className="text-4xl font-bold text-spiritual-blue mb-2">{t('calendar.daily.title')}</h1>
+          <p className="text-muted-foreground">{t('calendar.daily.subtitle')}</p>
         </div>
 
         {/* Calendar Navigation */}
@@ -90,7 +87,7 @@ const DailyVerseCalendar = () => {
               </Button>
               
               <h2 className="text-2xl font-semibold text-spiritual-blue">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {(t('calendar.daily.monthNames') as string[])[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               
               <Button
@@ -105,8 +102,8 @@ const DailyVerseCalendar = () => {
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 mb-4">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
+              {(t('calendar.daily.dayNames') as string[]).map((day, index) => (
+                <div key={index} className="p-2 text-center text-sm font-medium text-muted-foreground">
                   {day}
                 </div>
               ))}
@@ -185,7 +182,7 @@ const DailyVerseCalendar = () => {
             <CardContent className="p-8 text-center">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                No verse available for {selectedDate.toLocaleDateString()}
+                {t('calendar.daily.noVerse')} {selectedDate.toLocaleDateString()}
               </p>
             </CardContent>
           </Card>

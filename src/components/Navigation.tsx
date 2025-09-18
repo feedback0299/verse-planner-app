@@ -1,6 +1,8 @@
 import React from 'react';
 import { Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface NavigationProps {
   activeView: 'daily' | 'monthly';
@@ -8,10 +10,13 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ activeView, onViewChange }) => {
+  const { t } = useLanguage();
+  
   return (
     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
       <div className="bg-card shadow-spiritual rounded-full p-1 border border-border">
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          <LanguageSwitcher />
           <Button
             variant={activeView === 'daily' ? 'default' : 'ghost'}
             size="sm"
@@ -23,7 +28,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeView, onViewChange }) => 
             }`}
           >
             <Calendar className="h-4 w-4 mr-2" />
-            Daily Verses
+            {t('navigation.dailyVerses')}
           </Button>
           <Button
             variant={activeView === 'monthly' ? 'default' : 'ghost'}
@@ -36,7 +41,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeView, onViewChange }) => 
             }`}
           >
             <CalendarDays className="h-4 w-4 mr-2" />
-            Monthly Planner
+            {t('navigation.monthlyPlanner')}
           </Button>
         </div>
       </div>
