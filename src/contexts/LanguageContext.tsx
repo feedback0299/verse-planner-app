@@ -5,7 +5,7 @@ export type Language = 'en' | 'ta' | 'hi' | 'te' | 'kn' | 'ml' | 'gu' | 'bn' | '
 export interface LanguageContextType {
   currentLanguage: Language;
   setLanguage: (language: Language) => void;
-  t: (key: string) => string;
+  t: (key: string) => any;
   isRTL: boolean;
 }
 
@@ -72,7 +72,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     setCurrentLanguage(language);
   };
 
-  const t = (key: string): string => {
+  const t = (key: string): any => {
     const keys = key.split('.');
     let value: any = allTranslations[currentLanguage];
     

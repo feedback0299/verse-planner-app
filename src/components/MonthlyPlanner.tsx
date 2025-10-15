@@ -193,7 +193,7 @@ const MonthlyPlanner = () => {
               </Button>
               
               <CardTitle className="text-2xl text-spiritual-blue">
-                {(t('calendar.daily.monthNames') as string[])[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {t('calendar.daily.monthNames')[currentDate.getMonth()]} {currentDate.getFullYear()}
               </CardTitle>
               
               <Button
@@ -210,7 +210,7 @@ const MonthlyPlanner = () => {
           <CardContent>
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 mb-4">
-              {(t('calendar.monthly.dayNamesFull') as string[]).map((day, index) => (
+              {t('calendar.monthly.dayNamesFull').map((day: string, index: number) => (
                 <div key={index} className="p-3 text-center text-sm font-medium text-muted-foreground">
                   {day}
                 </div>
