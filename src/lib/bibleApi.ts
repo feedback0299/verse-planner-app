@@ -1,4 +1,6 @@
 // Free Bible API service using bible-api.com
+import { getTamilBibleVerses, parseTamilReference } from "./tamilBibleService";
+
 export interface BibleVerse {
   reference: string;
   text: string;
@@ -6,7 +8,36 @@ export interface BibleVerse {
   translation_name: string;
 }
 
-export const searchBibleVerse = async (reference: string): Promise<BibleVerse | null> => {
+const searchTamilVerse = async (reference: string): Promise<BibleVerse | null> => {
+  // Parse Tamil reference format (e.g., "யோவான் 3:16")
+  const parsed = parseTamilReference(reference);
+  if (!parsed) return null;
+
+  const { book, chapter, verses } = parsed;
+  
+  // Use the Tamil Bible service to get verses
+  const text = await getTamilBibleVerses(book, chapter, verses);
+  
+  if (!text) return null;
+  
+  return {
+    reference: reference,
+    text: text,
+    translation_id: 'tamil',
+    translation_name: 'Tamil Bible'
+  };
+};
+
+export const searchBibleVerse = async (
+  reference: string, 
+  language: string = 'en'
+): Promise<BibleVerse | null> => {
+  // If Tamil, use local JSON
+  if (language === 'ta') {
+    return searchTamilVerse(reference);
+  }
+  
+  // Otherwise use English API for other languages
   try {
     // Clean up the reference format
     const cleanReference = reference.trim().replace(/\s+/g, ' ');

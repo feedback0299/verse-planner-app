@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const MonthlyPlanner = () => {
   const { verseEntries, addOrUpdateEntry, getEntry } = useVerseContext();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingDate, setEditingDate] = useState<string | null>(null);
@@ -86,7 +86,7 @@ const MonthlyPlanner = () => {
     const reference = `${formData.book} ${formData.verse}`;
     
     try {
-      const verseData = await searchBibleVerse(reference);
+      const verseData = await searchBibleVerse(reference, currentLanguage);
       
       if (verseData) {
         setFormData(prev => ({
