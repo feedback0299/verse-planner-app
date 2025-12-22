@@ -8,8 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useVerseContext, VerseEntry } from '@/contexts/VerseContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { searchBibleVerse } from '@/lib/bibleApi';
+import { searchBibleVerse, getBookNumber } from '@/lib/bibleApi';
 import { useToast } from '@/hooks/use-toast';
+import { parseTamilReference } from '@/lib/tamilBibleService';
+import { parseEnglishReference } from '@/lib/englishBibleService';
+import { parseKannadaReference } from '@/lib/kannadaBibleService';
 
 const MonthlyPlanner = () => {
   const { verseEntries, addOrUpdateEntry, getEntry } = useVerseContext();
@@ -20,14 +23,14 @@ const MonthlyPlanner = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoadingVerse, setIsLoadingVerse] = useState(false);
   const [formData, setFormData] = useState<VerseEntry>({
-    book: '',
-    verse: '',
+    book_name: '',
+    verse_numbers: '',
+    verse_text: '',
     reference: '',
-    text: '',
     note1: '',
     note2: '',
     note3: '',
-    lastUpdated: ''
+    last_updated: ''
   });
 
   const getDaysInMonth = (date: Date) => {
@@ -60,20 +63,20 @@ const MonthlyPlanner = () => {
     
     setEditingDate(dateKey);
     setFormData(existingEntry || {
-      book: '',
-      verse: '',
+      book_name: '',
+      verse_numbers: '',
+      verse_text: '',
       reference: '',
-      text: '',
       note1: '',
       note2: '',
       note3: '',
-      lastUpdated: ''
+      last_updated: ''
     });
     setIsDialogOpen(true);
   };
 
   const searchVerse = async () => {
-    if (!formData.book || !formData.verse) {
+    if (!formData.book_name || !formData.verse_numbers) {
       toast({
         title: t('messages.missingInfo'),
         description: t('messages.enterBookVerse'),
@@ -83,17 +86,41 @@ const MonthlyPlanner = () => {
     }
 
     setIsLoadingVerse(true);
-    const reference = `${formData.book} ${formData.verse}`;
+    const reference = `${formData.book_name} ${formData.verse_numbers}`;
     
     try {
       const verseData = await searchBibleVerse(reference, currentLanguage);
       
       if (verseData) {
+        // Try to parse coordinates from the returned reference or input
+        let bookNum = getBookNumber(formData.book_name, currentLanguage);
+        let chapterNum = null;
+        let verses = '';
+
+        // Parsing logic depends on format "Book Chapter:Verse"
+        const parsed = currentLanguage === 'ta' 
+          ? parseTamilReference(verseData.reference) 
+          : parseEnglishReference(verseData.reference);
+
+        if (parsed) {
+           bookNum = getBookNumber(parsed.book, currentLanguage);
+           chapterNum = parseInt(parsed.chapter, 10);
+           verses = parsed.verses;
+        } else {
+            // Fallback parsing from input if reference format is strict/different
+             const parts = formData.verse_numbers.split(':');
+             if (parts.length > 0) chapterNum = parseInt(parts[0], 10);
+        }
+
         setFormData(prev => ({
           ...prev,
           reference: verseData.reference,
-          text: verseData.text
+          verse_text: verseData.text,
+          book_number: bookNum || undefined,
+          chapter_number: chapterNum || undefined,
+          verse_numbers: parsed ? parsed.verses : formData.verse_numbers // Try to keep normalized
         }));
+
         toast({
           title: t('messages.verseFound'),
           description: `${t('messages.verseFoundDesc')} ${verseData.reference}`,
@@ -118,7 +145,7 @@ const MonthlyPlanner = () => {
 
   const saveEntry = () => {
     if (editingDate) {
-      if (!formData.book || !formData.verse) {
+      if (!formData.book_name || !formData.verse_numbers) {
         toast({
           title: t('messages.missingInfo'),
           description: t('messages.enterBookVerseRequired'),
@@ -127,11 +154,24 @@ const MonthlyPlanner = () => {
         return;
       }
 
-      // If no text was fetched from API, create a simple reference
+      // Ensure coordinates are present if possible
+      let finalBookNum = formData.book_number;
+      let finalChapterNum = formData.chapter_number;
+      
+      if (!finalBookNum) {
+          finalBookNum = getBookNumber(formData.book_name, currentLanguage) || undefined;
+      }
+      
+      if (!finalChapterNum && formData.verse_numbers.includes(':')) {
+           finalChapterNum = parseInt(formData.verse_numbers.split(':')[0], 10);
+      }
+
       const finalData = {
         ...formData,
-        reference: formData.reference || `${formData.book} ${formData.verse}`,
-        text: formData.text || `${formData.book} ${formData.verse}`,
+        book_number: finalBookNum,
+        chapter_number: finalChapterNum,
+        reference: formData.reference || `${formData.book_name} ${formData.verse_numbers}`,
+        verse_text: formData.verse_text || `${formData.book_name} ${formData.verse_numbers}`,
       };
 
       addOrUpdateEntry(editingDate, finalData);
@@ -148,14 +188,14 @@ const MonthlyPlanner = () => {
 
   const resetFormData = () => {
     setFormData({
-      book: '',
-      verse: '',
+      book_name: '',
+      verse_numbers: '',
+      verse_text: '',
       reference: '',
-      text: '',
       note1: '',
       note2: '',
       note3: '',
-      lastUpdated: ''
+      last_updated: ''
     });
   };
 
@@ -169,6 +209,24 @@ const MonthlyPlanner = () => {
   const firstDay = getFirstDayOfMonth(currentDate);
   const today = new Date();
   const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
+
+  // Safe access to arrays from translations
+  const safeArray = (key: string, fallback: string[]) => {
+    const value = t(key);
+    return Array.isArray(value) ? value : fallback;
+  };
+
+  const dayNamesFull = safeArray('calendar.monthly.dayNamesFull', [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ]);
+
+
+  const monthNames = safeArray('calendar.daily.monthNames', [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]);
+
+  // const currentMonthName = monthNames[currentDate.getMonth()] || 'Month';
 
   return (
     <div className="min-h-screen bg-gradient-peaceful p-4">
@@ -192,6 +250,7 @@ const MonthlyPlanner = () => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
+              {/* Month name */}
               <CardTitle className="text-2xl text-spiritual-blue">
                 {t('calendar.daily.monthNames')[currentDate.getMonth()]} {currentDate.getFullYear()}
               </CardTitle>
@@ -210,7 +269,8 @@ const MonthlyPlanner = () => {
           <CardContent>
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 mb-4">
-              {t('calendar.monthly.dayNamesFull').map((day: string, index: number) => (
+              {/* Day headers */}
+              {dayNamesFull.map((day, index) => (
                 <div key={index} className="p-3 text-center text-sm font-medium text-muted-foreground">
                   {day}
                 </div>
@@ -253,7 +313,7 @@ const MonthlyPlanner = () => {
                       {entry && (
                         <div className="flex-1 overflow-hidden">
                           <div className="text-xs font-medium text-spiritual-blue mb-1 truncate">
-                            {entry.reference || `${entry.book} ${entry.verse}`}
+                            {entry.reference || `${entry.book_name} ${entry.verse_numbers}`}
                           </div>
                           {entry.note1 && (
                             <div className="text-xs text-muted-foreground truncate">
@@ -296,8 +356,8 @@ const MonthlyPlanner = () => {
                   <Input
                     id="book"
                     placeholder={t('verseDialog.bookPlaceholder')}
-                    value={formData.book}
-                    onChange={(e) => setFormData(prev => ({ ...prev, book: e.target.value }))}
+                    value={formData.book_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, book_name: e.target.value }))}
                     className="border-border"
                   />
                 </div>
@@ -307,8 +367,8 @@ const MonthlyPlanner = () => {
                     <Input
                       id="verse"
                       placeholder={t('verseDialog.versePlaceholder')}
-                      value={formData.verse}
-                      onChange={(e) => setFormData(prev => ({ ...prev, verse: e.target.value }))}
+                      value={formData.verse_numbers}
+                      onChange={(e) => setFormData(prev => ({ ...prev, verse_numbers: e.target.value }))}
                       className="border-border"
                     />
                   </div>
@@ -316,7 +376,7 @@ const MonthlyPlanner = () => {
                     <Button
                       size="sm"
                       onClick={searchVerse}
-                      disabled={isLoadingVerse || !formData.book || !formData.verse}
+                      disabled={isLoadingVerse || !formData.book_name || !formData.verse_numbers}
                       className="bg-gradient-spiritual text-primary-foreground"
                     >
                       {isLoadingVerse ? (
@@ -329,12 +389,12 @@ const MonthlyPlanner = () => {
                 </div>
               </div>
 
-              {formData.text && (
+              {formData.verse_text && (
                 <div>
                   <Label className="text-sm font-medium text-spiritual-blue">{t('verseDialog.verseText')}</Label>
                   <div className="p-3 bg-spiritual-light rounded-lg border border-border">
                     <p className="text-sm text-foreground leading-relaxed">
-                      "{formData.text}"
+                      "{formData.verse_text}"
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       - {formData.reference}

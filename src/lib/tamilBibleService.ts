@@ -1,4 +1,3 @@
-// Tamil Bible service for loading and searching local Tamil Bible JSON
 export interface TamilBibleData {
   Book: {
     Chapter: {

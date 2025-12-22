@@ -1,5 +1,6 @@
-// Free Bible API service using bible-api.com
-import { getTamilBibleVerses, parseTamilReference } from "./tamilBibleService";
+import { getTamilBibleVerses, parseTamilReference, getTamilBookNames } from "./tamilBibleService";
+import { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames } from "./englishBibleService";
+import { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames } from "./kannadaBibleService";
 
 export interface BibleVerse {
   reference: string;
@@ -28,13 +29,58 @@ const searchTamilVerse = async (reference: string): Promise<BibleVerse | null> =
   };
 };
 
+const searchEnglishVerse = async (reference: string): Promise<BibleVerse | null> => {
+  // Parse English reference format (e.g., "John 3:16")
+  const parsed = parseEnglishReference(reference);
+  if (!parsed) return null;
+
+  const { book, chapter, verses } = parsed;
+  
+  // Use the English Bible service to get verses
+  const text = await getEnglishBibleVerses(book, chapter, verses);
+  
+  if (!text) return null;
+  
+  return {
+    reference: reference,
+    text: text,
+    translation_id: 'english',
+    translation_name: 'English Bible'
+  };
+};
+
+
+const searchKannadaVerse = async (reference: string): Promise<BibleVerse | null> => {
+  // Parse Kannada reference format (e.g., "John 3:16")
+  const parsed = parseKannadaReference(reference);
+  if (!parsed) return null;
+
+  const { book, chapter, verses } = parsed;
+  
+  // Use the Kannada Bible service to get verses
+  const text = await getKannadaBibleVerses(book, chapter, verses);
+  
+  if (!text) return null;
+  
+  return {
+    reference: reference,
+    text: text,
+    translation_id: 'kannada',
+    translation_name: 'Kannada Bible'
+  };
+};
+
 export const searchBibleVerse = async (
   reference: string, 
-  language: string = 'en'
+  language: string = 'ta'
 ): Promise<BibleVerse | null> => {
   // If Tamil, use local JSON
   if (language === 'ta') {
     return searchTamilVerse(reference);
+  } else if (language === 'en') {
+    return searchEnglishVerse(reference);
+  } else if (language === 'ka') {
+    return searchKannadaVerse(reference);
   }
   
   // Otherwise use English API for other languages
@@ -82,4 +128,71 @@ export const suggestVerseFormat = (input: string): string => {
   return suggestions.find(s => 
     s.toLowerCase().includes(input.toLowerCase())
   ) || input;
+};
+
+
+
+// ... existing code ...
+
+export const getBookNumber = (bookName: string, language: string): number | null => {
+  const normalizedBook = bookName.trim().toLowerCase();
+  
+  if (language === 'ta') {
+    const books = getTamilBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  } else if (language === 'en') {
+    const books = getEnglishBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  } else if (language === 'ka') {
+    const books = getKannadaBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  }
+};
+
+export const detectBookNumber = (bookName: string): number | null => {
+   // Try English first
+   let num = getBookNumber(bookName, 'en');
+   if (num) return num;
+   
+   // Try Tamil
+   num = getBookNumber(bookName, 'ta');
+    if (num) return num;
+  // Try Kannada
+  num = getBookNumber(bookName, 'ka');
+   return num;
+};
+
+export const getBookNameFromNumber = (bookNumber: number, language: string): string | null => {
+// ... existing code ...
+  const index = bookNumber - 1;
+  if (index < 0 || index >= 66) return null;
+
+  if (language === 'ta') {
+    return getTamilBookNames()[index] || null;
+  } else if (language === 'en') {
+    return getEnglishBookNames()[index] || null;
+  } else if (language === 'ka') {
+    return getKannadaBookNames()[index] || null;
+  }
+};
+
+export const getVerseTextByCoordinates = async (
+  bookNumber: number, 
+  chapter: number, 
+  verseNumbers: string, 
+  language: string
+): Promise<string | null> => {
+  const bookName = getBookNameFromNumber(bookNumber, language);
+  if (!bookName) return null;
+
+  if (language === 'ta') {
+    return getTamilBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'en') {
+    return getEnglishBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'ka') {
+    return getKannadaBibleVerses(bookName, chapter.toString(), verseNumbers);
+  }
 };
