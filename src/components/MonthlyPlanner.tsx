@@ -252,7 +252,7 @@ const MonthlyPlanner = () => {
               
               {/* Month name */}
               <CardTitle className="text-2xl text-spiritual-blue">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {t('calendar.daily.monthNames')[currentDate.getMonth()]} {currentDate.getFullYear()}
               </CardTitle>
               
               <Button

@@ -205,7 +205,7 @@ const DailyVerseCalendar = () => {
               </Button>
               
               <h2 className="text-2xl font-semibold text-spiritual-blue">
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {t('calendar.daily.monthNames')[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               
               <Button
