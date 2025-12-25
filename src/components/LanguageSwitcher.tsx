@@ -14,7 +14,7 @@ const languageNames = {
   ta: 'தமிழ்',
   hi: 'हिंदी',
   te: 'తెలుగు',
-  kn: 'ಕನ್ನಡ',
+  ka: 'ಕನ್ನಡ',
   ml: 'മലയാളം',
   gu: 'ગુજરાતી',
   bn: 'বাংলা',
@@ -61,7 +61,7 @@ const LanguageSwitcher: React.FC = () => {
                 ({t(`language.${code === 'ta' ? 'tamil' : 
                      code === 'hi' ? 'hindi' : 
                      code === 'te' ? 'telugu' : 
-                     code === 'kn' ? 'kannada' : 
+                     code === 'ka' ? 'kannada' : 
                      code === 'ml' ? 'malayalam' : 
                      code === 'gu' ? 'gujarati' : 
                      code === 'bn' ? 'bengali' : 

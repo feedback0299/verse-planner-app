@@ -36,7 +36,7 @@ const loadEnglishBible = async (): Promise<EnglishBibleData | null> => {
   }
 
   try {
-    const response = await fetch('/bible-en.json');
+    const response = await fetch('/bible-verse-lang/bible-en.json');
     if (!response.ok) {
       throw new Error('Failed to load English Bible');
     }

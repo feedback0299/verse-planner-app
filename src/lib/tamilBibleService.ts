@@ -39,7 +39,7 @@ const loadTamilBible = async (): Promise<TamilBibleData | null> => {
   }
 
   try {
-    const response = await fetch('/bible-ta.json');
+    const response = await fetch('/bible-verse-lang/bible-ta.json');
     if (!response.ok) {
       throw new Error('Failed to load Tamil Bible');
     }

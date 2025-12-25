@@ -174,7 +174,7 @@ const SuperAdmin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-12 px-4 pb-12">
+    <div className="min-h-screen bg-gray-100 pt-12 px-10 pb-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border">
           <div>

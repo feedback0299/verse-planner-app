@@ -1,9 +1,9 @@
 // src/contexts/LanguageContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { en_translations, ta_translations } from '@/lib/translations';
+import { en_translations, ta_translations, ka_translations } from '@/lib/translations';
 
 // Supported languages
-type Language = 'en' | 'ta';
+export type Language = 'en' | 'ta' | 'ka';
 
 interface LanguageContextType {
   currentLanguage: Language;
@@ -16,6 +16,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const allTranslations = {
   en: en_translations,
   ta: ta_translations,
+  ka: ka_translations,
 };
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

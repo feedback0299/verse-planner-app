@@ -15,13 +15,13 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-spiritual-blue to-black opacity-80 z-10" />
         <div 
           className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1773&q=80")' }} 
+          style={{ backgroundImage: 'url("/images/banner-1766498186.jpg")' }} 
         />
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-4 drop-shadow-lg">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-4 drop-shadow-lg break-words hyphens-auto">
             {currentLanguage === 'ta' ? 'ஆத்துமநேசர் இந்தியா தேவாலயம்' : 'Athumanesar India Church'}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 font-light tracking-wide mb-8">
+          <p className="text-xl md:text-2xl text-gray-200 font-light tracking-wide mb-8 break-words">
             {currentLanguage === 'ta' ? 'தஞ்சாவூர் தலைமையகம்' : 'Thanjavur Headquarters'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

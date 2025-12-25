@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVerseContext } from '@/contexts/VerseContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getBookNameFromNumber, getVerseTextByCoordinates } from '@/lib/bibleApi';
+import { getBookNameFromNumber, getVerseTextByCoordinates, detectBookNumber } from '@/lib/bibleApi';
 
 // Demo Bible verses data (fallback for days without user entries)
 const demoVersesEn: Record<string, any> = {
@@ -21,7 +21,15 @@ const demoVersesTa: Record<string, any> = {
   '2025-01-02': { book: 'யோவான்', verse: '3:16', text: 'தேவன், தம்முடைய ஒரேபேறான குமாரனை விசுவாசிக்கிறவன் எவனோ அவன் கெட்டுப்போகாமல்...' },
   '2025-01-03': { book: 'பிலிப்பியர்', verse: '4:13', text: 'என்னைப் பலப்படுத்துகிற கிறிஸ்துவினாலே எல்லாவற்றையுஞ்செய்ய எனக்குப் பெலனுண்டு.' },
   '2025-01-04': { book: 'ரோமர்', verse: '8:28', text: 'அன்றியும், அவருடைய தீர்மானத்தின்படி அழைக்கப்பட்டவர்களாய் தேவனிடத்தில் அன்புகூருகிறவர்களுக்கு...' },
-  '2025-01-05': { book: 'எரேமியா', verse: '29:11', text: 'நீங்கள் எதிர்பார்த்திருக்கும் முடிவை உங்களுக்குக் கொடுக்கும்படிக்கு நான் உங்கள்பேரில் நினைத்திருக்கிற நினைவுகளை...' },
+  '2025-01-05': { book: 'எரேமியா', verse: '29:11', text: 'நீங்கள் எதிர்பார்த்திருக்கும் முடிவை உங்களுக்குக் கொடுக்கும்படிக்கு1 நான் உங்கள்பேரில் நினைத்திருக்கிற நினைவுகளை...' },
+};
+
+const demoVersesKa: Record<string, any> = {
+  '2025-01-01': { book: 'ಕೀರ್ತನೆಗಳು', verse: '23:1', text: 'ಕರ್ತನು ನನ್ನ ಕುರುಬನು; ನನಗೆ ಕೊರತೆಯಾಗದು.' },
+  '2025-01-02': { book: 'ಯೋಹಾನನು', verse: '3:16', text: 'ದೇವರು ಲೋಕವನ್ನು ಎಷ್ಟೋ ಪ್ರೀತಿಸಿದನು...' },
+  '2025-01-03': { book: 'ಫಿಲಿಪ್ಪಿಯವರಿಗೆ', verse: '4:13', text: 'ನನ್ನನ್ನು ಬಲಪಡಿಸುವ ಕ್ರಿಸ್ತನ ಮೂಲಕ ನಾನು ಎಲ್ಲವನ್ನೂ ಮಾಡಬಲ್ಲೆನು.' },
+  '2025-01-04': { book: 'ರೋಮಾಪುರದವರಿಗೆ', verse: '8:28', text: 'ದೇವರನ್ನು ಪ್ರೀತಿಸುವವರಿಗೆ ಎಲ್ಲವೂ ಒಳ್ಳೆಯದಕ್ಕಾಗಿ ಕೂಡಿಕೊಂಡು ಬರುತ್ತದೆ...' },
+  '2025-01-05': { book: 'ಯೆರೆಮಿಯ', verse: '29:11', text: 'ನಿಮಗಾಗಿ ನಾನು ಇಟ್ಟುಕೊಂಡಿರುವ ಆಲೋಚನೆಗಳನ್ನು ನಾನು ಬಲ್ಲೆನು...' },
 };
 
 const monthNamesEn = [
@@ -33,6 +41,15 @@ const monthNamesTa = [
   'ஜனவரி', 'பிப்ரவரி', 'மார்ச்', 'ஏப்ரல்', 'மே', 'ஜூன்',
   'ஜூலை', 'ஆகஸ்ட்', 'செப்டம்பர்', 'அக்டோபர்', 'நவம்பர்', 'டிசம்பர்'
 ];
+
+const monthNamesKa = [
+  'ಜನವರಿ', 'ಫೆಬ್ರವರಿ', 'ಮಾರ್ಚ್', 'ಏಪ್ರಿಲ್', 'ಮೇ', 'ಜೂನ್',
+  'ಜುಲೈ', 'ಆಗಸ್ಟ್', 'ಸೆಪ್ಟೆಂಬರ್', 'ಅಕ್ಟೋಬರ್', 'ನವೆಂಬರ್', 'ಡಿಸೆಂಬರ್'
+];
+
+const weekDaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const weekDaysTa = ['ஞாயி', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி'];
+const weekDaysKa = ['ಭಾನು', 'ಸೋಮ', 'ಮಂಗಳ', 'ಬುಧ', 'ಗುರು', 'ಶುಕ್ರ', 'ಶನಿ'];
 
 const DailyVerseCalendar = () => {
   const { verseEntries } = useVerseContext();
@@ -89,7 +106,8 @@ const DailyVerseCalendar = () => {
     selectedDate.getDate()
   );
 
-  const monthNames = currentLanguage === 'ta' ? monthNamesTa : monthNamesEn;
+  const monthNames = currentLanguage === 'ta' ? monthNamesTa : currentLanguage === 'ka' ? monthNamesKa : monthNamesEn;
+  const weekDays = currentLanguage === 'ta' ? weekDaysTa : currentLanguage === 'ka' ? weekDaysKa : weekDaysEn;
 
   // Effect to resolve the verse text based on language and DB Coordinates
   useEffect(() => {
@@ -130,7 +148,6 @@ const DailyVerseCalendar = () => {
       } 
       // 2. Legacy/Incomplete DB entry - Try to auto-detect coordinates from stored name
       else if (userVerse) {
-          const { detectBookNumber } = await import('@/lib/bibleApi'); // Dynamic import to avoid circular dep if any, or just safe
           
           let detectedBookNum = detectBookNumber(userVerse.book_name);
           // Try to parse chapter/verse from verse_numbers string if strictly formatted "3:16"
@@ -162,7 +179,7 @@ const DailyVerseCalendar = () => {
           }
       } else {
         // 3. Fallback to Demo Data
-        const demoVerses = currentLanguage === 'ta' ? demoVersesTa : demoVersesEn;
+        const demoVerses = currentLanguage === 'ta' ? demoVersesTa : currentLanguage === 'ka' ? demoVersesKa : demoVersesEn;
         const demoVerse = demoVerses[selectedDateKey];
         if (demoVerse) {
           setDisplayVerse(demoVerse);
@@ -182,12 +199,12 @@ const DailyVerseCalendar = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-spiritual-blue mb-2">
-            {currentLanguage === 'ta' ? 'தினசரி பைபிள் வசனங்கள்' : 'Daily Bible Verses'}
+            {t('calendar.daily.title') || (currentLanguage === 'ta' ? 'தினசரி பைபிள் வசனங்கள்' : 'Daily Bible Verses')}
           </h1>
           <p className="text-muted-foreground">
-            {currentLanguage === 'ta'
+            {t('calendar.daily.subtitle') || (currentLanguage === 'ta'
               ? 'ஒவ்வொரு நாளும் கடவுளின் வார்த்தையை கண்டறியவும்'
-              : "Discover God's word for each day"}
+              : "Discover God's word for each day")}
           </p>
         </div>
 
@@ -205,7 +222,7 @@ const DailyVerseCalendar = () => {
               </Button>
               
               <h2 className="text-2xl font-semibold text-spiritual-blue">
-                {t('calendar.daily.monthNames')[currentDate.getMonth()]} {currentDate.getFullYear()}
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               
               <Button
@@ -220,7 +237,7 @@ const DailyVerseCalendar = () => {
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 mb-4">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              {weekDays.map((day) => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
                   {day}
                 </div>
@@ -239,7 +256,7 @@ const DailyVerseCalendar = () => {
                 const dateKey = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day);
                 const hasUserVerse = verseEntries[dateKey];
                 // Check demo data too for the indicator dot
-                const demoVerses = currentLanguage === 'ta' ? demoVersesTa : demoVersesEn;
+                const demoVerses = currentLanguage === 'ta' ? demoVersesTa : currentLanguage === 'ka' ? demoVersesKa : demoVersesEn;
                 const hasDemoVerse = demoVerses[dateKey];
                 const hasVerse = hasUserVerse || hasDemoVerse;
                 
@@ -291,12 +308,12 @@ const DailyVerseCalendar = () => {
                   {displayVerse.book} {displayVerse.verse}
                 </span>
               </div>
-              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6">
+              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6 break-words whitespace-pre-wrap">
                 "{displayVerse.text}"
               </blockquote>
               <div className="mt-4 text-right">
                 <span className="text-sm text-muted-foreground">
-                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : 'en-US', {
+                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : currentLanguage === 'ka' ? 'kn-IN' : 'en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -311,9 +328,9 @@ const DailyVerseCalendar = () => {
             <CardContent className="p-8 text-center">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {currentLanguage === 'ta'
+                {t('calendar.daily.noVerse') || (currentLanguage === 'ta'
                   ? 'இன்றைய வசனம் இல்லை'
-                  : `No verse available for ${selectedDate.toLocaleDateString()}`}
+                  : `No verse available for ${selectedDate.toLocaleDateString()}`)}
               </p>
             </CardContent>
           </Card>
