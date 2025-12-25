@@ -208,6 +208,51 @@ const DailyVerseCalendar = () => {
           </p>
         </div>
 
+        {/* Selected Date Verse */}
+        {isLoadingVerse ? (
+             <Card className="shadow-card border-0 mb-6">
+                <CardContent className="p-8 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-spiritual-blue" />
+                    <p className="mt-2 text-muted-foreground">Loading verse...</p>
+                </CardContent>
+            </Card>
+        ) : displayVerse ? (
+          <Card className="shadow-spiritual border-0 mb-6">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-spiritual-gold" />
+                <span className="text-sm font-medium text-spiritual-gold">
+                  {displayVerse.book} {displayVerse.verse}
+                </span>
+              </div>
+              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6 break-words whitespace-pre-wrap">
+                "{displayVerse.text}"
+              </blockquote>
+              <div className="mt-4 text-right">
+                <span className="text-sm text-muted-foreground">
+                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : currentLanguage === 'ka' ? 'kn-IN' : 'en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-card border-0 mb-6">
+            <CardContent className="p-8 text-center">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                {t('calendar.daily.noVerse') || (currentLanguage === 'ta'
+                  ? 'இன்றைய வசனம் இல்லை'
+                  : `No verse available for ${selectedDate.toLocaleDateString()}`)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Calendar Navigation */}
         <Card className="mb-6 shadow-card border-0">
           <CardContent className="p-6">
@@ -291,50 +336,7 @@ const DailyVerseCalendar = () => {
           </CardContent>
         </Card>
 
-        {/* Selected Date Verse */}
-        {isLoadingVerse ? (
-             <Card className="shadow-card border-0">
-                <CardContent className="p-8 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-spiritual-blue" />
-                    <p className="mt-2 text-muted-foreground">Loading verse...</p>
-                </CardContent>
-            </Card>
-        ) : displayVerse ? (
-          <Card className="shadow-spiritual border-0">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-2 mb-4">
-                <BookOpen className="h-5 w-5 text-spiritual-gold" />
-                <span className="text-sm font-medium text-spiritual-gold">
-                  {displayVerse.book} {displayVerse.verse}
-                </span>
-              </div>
-              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6 break-words whitespace-pre-wrap">
-                "{displayVerse.text}"
-              </blockquote>
-              <div className="mt-4 text-right">
-                <span className="text-sm text-muted-foreground">
-                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : currentLanguage === 'ka' ? 'kn-IN' : 'en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-card border-0">
-            <CardContent className="p-8 text-center">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                {t('calendar.daily.noVerse') || (currentLanguage === 'ta'
-                  ? 'இன்றைய வசனம் இல்லை'
-                  : `No verse available for ${selectedDate.toLocaleDateString()}`)}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        
       </div>
     </div>
   );
