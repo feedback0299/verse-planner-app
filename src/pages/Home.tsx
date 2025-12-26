@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import TodayVerseDisplay from '@/components/TodayVerseDisplay';
 import PeriodicVerseDisplay from '@/components/PeriodicVerseDisplay';
 import BibleSearch from '@/components/BibleSearch';
+import RandomVerseDisplay from '@/components/RandomVerseDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import QRCode from "react-qr-code";
 
@@ -45,6 +46,11 @@ const Home = () => {
           {/* Section 3: Today's Verse */}
           <div id="section3" className="max-w-3xl mx-auto w-full">
              <TodayVerseDisplay />
+          </div>
+
+          {/* Random Verse Section (Hourly) */}
+          <div className="max-w-3xl mx-auto w-full pt-8">
+             <RandomVerseDisplay />
           </div>
 
           {/* Section 4: Bible Search */}

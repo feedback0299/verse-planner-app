@@ -134,9 +134,40 @@ export const suggestVerseFormat = (input: string): string => {
   ) || input;
 };
 
+// Metadata for standard 66-book Protestant Bible
+export const BIBLE_CHAPTER_COUNTS = [
+  50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 
+  12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 
+  16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 
+  3, 5, 1, 1, 1, 22
+];
 
+/**
+ * Generates random coordinates (book, chapter, verse) seeded by a number.
+ * This ensures the "randomness" is consistent for the given seed (e.g., current hour).
+ */
+export const getRandomVerseCoordinates = (seed: number) => {
+  // Use a simple Linear Congruential Generator for consistency
+  const lcg = (s: number) => (s * 1664525 + 1013904223) % 4294967296;
+  
+  let currentSeed = lcg(seed);
+  const bookIndex = currentSeed % 66;
+  
+  currentSeed = lcg(currentSeed);
+  const maxChapters = BIBLE_CHAPTER_COUNTS[bookIndex];
+  const chapter = (currentSeed % maxChapters) + 1;
+  
+  currentSeed = lcg(currentSeed);
+  // We assume a max of 20 verses for the random pick if we don't have metadata.
+  // Most chapters have >20, and if it fails, our component can retry or default.
+  const verse = (currentSeed % 20) + 1; 
 
-// ... existing code ...
+  return {
+    bookNumber: bookIndex + 1,
+    chapter,
+    verse: verse.toString()
+  };
+};
 
 export const getBookNumber = (bookName: string, language: string): number | null => {
   const normalizedBook = bookName.trim().toLowerCase();
