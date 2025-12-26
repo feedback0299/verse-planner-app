@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVerseContext } from '@/contexts/VerseContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPeriodicVerse } from '@/lib/periodicVerseService';
+import { Star } from 'lucide-react';
 import { getBookNameFromNumber, getVerseTextByCoordinates, detectBookNumber } from '@/lib/bibleApi';
 
 // Demo Bible verses data (fallback for days without user entries)
@@ -64,6 +66,8 @@ const DailyVerseCalendar = () => {
     text: string;
   } | null>(null);
   const [isLoadingVerse, setIsLoadingVerse] = useState(false);
+  const [monthlyVerse, setMonthlyVerse] = useState<{ text: string; reference: string } | null>(null);
+  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -134,15 +138,25 @@ const DailyVerseCalendar = () => {
           return false;
       };
 
-      // 1. If we have a DB entry with explicit coordinates
-      if (userVerse && userVerse.book_number && userVerse.chapter_number && userVerse.verse_numbers) {
-          const success = await tryResolveDynamic(userVerse.book_number, userVerse.chapter_number, userVerse.verse_numbers);
+      // 1. If we have a DB entry with coordinates
+      if (userVerse && userVerse.book_number && userVerse.verse_numbers) {
+          let cNum = userVerse.chapter_number || 1;
+          let vNums = userVerse.verse_numbers;
+
+          // If verse_numbers is in format "Chapter:Verse", parse it
+          if (vNums.includes(':')) {
+              const parts = vNums.split(':');
+              cNum = parseInt(parts[0], 10);
+              vNums = parts[1];
+          }
+
+          const success = await tryResolveDynamic(userVerse.book_number, cNum, vNums);
           if (!success) {
                // Fallback to stored
                setDisplayVerse({
-                book: getBookNameFromNumber(userVerse.book_number, currentLanguage) || userVerse.book_name,
-                verse: `${userVerse.chapter_number}:${userVerse.verse_numbers}`,
-                text: userVerse.verse_text 
+                book: getBookNameFromNumber(userVerse.book_number, currentLanguage) || userVerse.book_name || "",
+                verse: userVerse.verse_numbers,
+                text: userVerse.verse_text || ""
              });
           }
       } 
@@ -193,6 +207,40 @@ const DailyVerseCalendar = () => {
     resolveVerse();
   }, [selectedDateKey, verseEntries, currentLanguage]);
 
+  // Effect to fetch the monthly verse whenever currentDate (month/year) changes
+  useEffect(() => {
+    const fetchMonthlyVerse = async () => {
+      setIsLoadingMonthly(true);
+      const period = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      try {
+        const data = await getPeriodicVerse('monthly', period);
+        if (data) {
+          const bookName = getBookNameFromNumber(data.book_number, currentLanguage) || "";
+          const parts = data.verse_numbers.split(':');
+          const cNum = parts.length > 1 ? parseInt(parts[0], 10) : 1;
+          const vNum = parts.length > 1 ? parts[1] : data.verse_numbers;
+          
+          const text = await getVerseTextByCoordinates(data.book_number, cNum, vNum, currentLanguage);
+          
+          setMonthlyVerse({
+            text: text || "",
+            reference: `${bookName} ${data.verse_numbers}`
+          });
+        } else {
+          setMonthlyVerse(null);
+        }
+      } catch (e) {
+        console.error("Error fetching monthly verse for calendar:", e);
+        setMonthlyVerse(null);
+      } finally {
+        setIsLoadingMonthly(false);
+      }
+    };
+
+    fetchMonthlyVerse();
+  }, [currentDate, currentLanguage]);
+
   return (
     <div className="min-h-screen bg-gradient-peaceful p-4">
       <div className="max-w-4xl mx-auto">
@@ -208,50 +256,32 @@ const DailyVerseCalendar = () => {
           </p>
         </div>
 
-        {/* Selected Date Verse */}
-        {isLoadingVerse ? (
-             <Card className="shadow-card border-0 mb-6">
-                <CardContent className="p-8 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-spiritual-blue" />
-                    <p className="mt-2 text-muted-foreground">Loading verse...</p>
-                </CardContent>
-            </Card>
-        ) : displayVerse ? (
-          <Card className="shadow-spiritual border-0 mb-6">
+        {/* Monthly Verse Display (updates on month change) */}
+        {isLoadingMonthly ? (
+            <Card className="shadow-card border-0 mb-6 bg-slate-50/50">
+               <CardContent className="p-8 text-center">
+                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-spiritual-gold opacity-50" />
+               </CardContent>
+           </Card>
+        ) : monthlyVerse ? (
+          <Card className="shadow-spiritual border-0 mb-6 bg-slate-50 border-l-4 border-spiritual-gold">
             <CardContent className="p-8">
               <div className="flex items-center gap-2 mb-4">
-                <BookOpen className="h-5 w-5 text-spiritual-gold" />
-                <span className="text-sm font-medium text-spiritual-gold">
-                  {displayVerse.book} {displayVerse.verse}
+                <Star className="h-5 w-5 text-spiritual-gold" />
+                <span className="text-sm font-medium text-spiritual-gold uppercase tracking-wider">
+                  {currentLanguage === 'ta' ? 'இந்த மாத வசனம்' : 'Verse of the Month'} - {monthNames[currentDate.getMonth()]}
                 </span>
               </div>
-              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6 break-words whitespace-pre-wrap">
-                "{displayVerse.text}"
+              <blockquote className="text-xl font-medium text-slate-800 leading-relaxed italic">
+                "{monthlyVerse.text}"
               </blockquote>
-              <div className="mt-4 text-right">
-                <span className="text-sm text-muted-foreground">
-                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : currentLanguage === 'ka' ? 'kn-IN' : 'en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
+              <div className="flex items-center gap-2 text-spiritual-blue font-semibold mt-4">
+                <BookOpen className="h-4 w-4" />
+                {monthlyVerse.reference}
               </div>
             </CardContent>
           </Card>
-        ) : (
-          <Card className="shadow-card border-0 mb-6">
-            <CardContent className="p-8 text-center">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                {t('calendar.daily.noVerse') || (currentLanguage === 'ta'
-                  ? 'இன்றைய வசனம் இல்லை'
-                  : `No verse available for ${selectedDate.toLocaleDateString()}`)}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        ) : null}
 
         {/* Calendar Navigation */}
         <Card className="mb-6 shadow-card border-0">
@@ -335,7 +365,51 @@ const DailyVerseCalendar = () => {
             </div>
           </CardContent>
         </Card>
-
+        
+        {/* Selected Date Verse */}
+        {isLoadingVerse ? (
+             <Card className="shadow-card border-0 mb-6">
+                <CardContent className="p-8 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-spiritual-blue" />
+                    <p className="mt-2 text-muted-foreground">Loading verse...</p>
+                </CardContent>
+            </Card>
+        ) : displayVerse ? (
+          <Card className="shadow-spiritual border-0 mb-6">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="h-5 w-5 text-spiritual-gold" />
+                <span className="text-sm font-medium text-spiritual-gold">
+                  {displayVerse.book} {displayVerse.verse}
+                </span>
+              </div>
+              <blockquote className="text-lg text-foreground leading-relaxed border-l-4 border-spiritual-gold pl-6 break-words whitespace-pre-wrap">
+                "{displayVerse.text}"
+              </blockquote>
+              <div className="mt-4 text-right">
+                <span className="text-sm text-muted-foreground">
+                  {selectedDate.toLocaleDateString(currentLanguage === 'ta' ? 'ta-IN' : currentLanguage === 'ka' ? 'kn-IN' : 'en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-card border-0 mb-6">
+            <CardContent className="p-8 text-center">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                {t('calendar.daily.noVerse') || (currentLanguage === 'ta'
+                  ? 'இன்றைய வசனம் இல்லை'
+                  : `No verse available for ${selectedDate.toLocaleDateString()}`)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
         
       </div>
     </div>

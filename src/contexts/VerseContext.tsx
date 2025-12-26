@@ -99,11 +99,8 @@ export const VerseProvider: React.FC<VerseProviderProps> = ({ children }) => {
       const payload = {
         date: dateKey,
         book_number: entry.book_number || null,
-        chapter_number: entry.chapter_number || null,
+        chapter_number: entry.chapter_number || null, // Keep for backward compat if needed, but primary is verse_numbers logic
         verse_numbers: entry.verse_numbers || null,
-        book_name: entry.book_name,
-        verse_text: entry.verse_text,
-        reference: entry.reference,
         note1: entry.note1,
         note2: entry.note2,
         note3: entry.note3,

@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Lock, Eye, LogOut } from 'lucide-react';
+import { Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, Calendar, Star, Target } from 'lucide-react';
 import { uploadMagazinePDF, getMagazineUrl } from '@/lib/magazineService';
 import { Document, Page, pdfjs } from 'react-pdf';
+import MonthlyPlanner from '@/components/MonthlyPlanner';
+import PeriodicVerseUploader from '@/components/PeriodicVerseUploader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Setup pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -63,7 +66,6 @@ const MagazineAdmin = () => {
     } else {
       toast({ title: "Success", description: "Magazine published successfully!" });
       setFile(null);
-      // Keep previewURL for confirmation or refresh it from server if needed
     }
     setUploading(false);
   };
@@ -80,7 +82,7 @@ const MagazineAdmin = () => {
             <div className="mx-auto bg-slate-800 p-3 rounded-full w-fit mb-4">
               <Lock className="h-8 w-8 text-slate-400" />
             </div>
-            <CardTitle className="text-2xl text-slate-200">Magazine Publisher</CardTitle>
+            <CardTitle className="text-2xl text-slate-200">Admin Publisher</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -90,7 +92,7 @@ const MagazineAdmin = () => {
                     id="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-slate-900 border-slate-700"
+                    className="bg-slate-900 border-slate-700 text-white"
                     placeholder="ID" 
                  />
               </div>
@@ -101,12 +103,12 @@ const MagazineAdmin = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)} 
-                    className="bg-slate-900 border-slate-700"
+                    className="bg-slate-900 border-slate-700 text-white"
                  />
               </div>
-              <Button type="submit" className="w-full bg-slate-700 hover:bg-slate-600" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Enter Studio'}
-              </Button>
+              <button type="submit" className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md transition-colors" disabled={loading}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : 'Enter Studio'}
+              </button>
             </form>
           </CardContent>
         </Card>
@@ -116,129 +118,163 @@ const MagazineAdmin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 px-4 pb-12">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Magazine Management</h1>
-                <p className="text-gray-500">Upload and preview the monthly magazine.</p>
+                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-gray-500">Manage magazine, verses, and Bible planner.</p>
             </div>
             <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
                 <LogOut className="mr-2 h-4 w-4"/> Exit
             </Button>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-            {/* Upload Section */}
-            <Card className="h-fit">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Upload className="h-5 w-5 text-blue-600"/>
-                        Upload New Issue
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                        <input 
-                            type="file" 
-                            accept="application/pdf"
-                            onChange={onFileChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="p-4 bg-blue-50 rounded-full text-blue-600">
-                                <FileText className="h-8 w-8" />
-                            </div>
-                            <p className="font-medium text-gray-900">
-                                {file ? file.name : "Click to select PDF"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                                Only PDF files are supported. Max 50MB.
-                            </p>
-                        </div>
-                    </div>
+        <Tabs defaultValue="magazine" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8 bg-white border">
+                <TabsTrigger value="magazine" className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" /> Magazine
+                </TabsTrigger>
+                <TabsTrigger value="planner" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" /> Bible Planner
+                </TabsTrigger>
+                <TabsTrigger value="monthly_verse" className="flex items-center gap-2">
+                    <Star className="h-4 w-4" /> Monthly Verse
+                </TabsTrigger>
+                <TabsTrigger value="annual_verse" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" /> Annual Verse
+                </TabsTrigger>
+            </TabsList>
 
-                    {file && (
-                        <Button 
-                            onClick={handleUpload} 
-                            className="w-full bg-blue-600 hover:bg-blue-700"
-                            disabled={uploading}
-                        >
-                            {uploading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Publishing...
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    Publish Magazine
-                                </>
-                            )}
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Preview Section */}
-            <Card className="lg:row-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Eye className="h-5 w-5 text-purple-600"/>
-                        Live Preview
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center bg-gray-100/50 min-h-[500px] rounded-lg p-4 justify-center">
-                    {previewUrl ? (
-                        <div className="flex flex-col items-center gap-4">
-                             <Document
-                                file={previewUrl}
-                                onLoadSuccess={onDocumentLoadSuccess}
-                                className="shadow-xl"
-                            >
-                                <Page 
-                                    pageNumber={pageNumber} 
-                                    width={400} 
-                                    renderTextLayer={false} 
-                                    renderAnnotationLayer={false}
+            <TabsContent value="magazine">
+                <div className="grid lg:grid-cols-2 gap-8">
+                    {/* Upload Section */}
+                    <Card className="h-fit">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Upload className="h-5 w-5 text-blue-600"/>
+                                Upload New Issue
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
+                                <input 
+                                    type="file" 
+                                    accept="application/pdf"
+                                    onChange={onFileChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
-                            </Document>
-                            
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPageNumber(p => Math.max(1, p - 1))}
-                                    disabled={pageNumber <= 1}
-                                >
-                                    Previous
-                                </Button>
-                                <span className="text-sm font-medium text-gray-600">
-                                    Page {pageNumber} of {numPages}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPageNumber(p => Math.min(numPages, p + 1))}
-                                    disabled={pageNumber >= numPages}
-                                >
-                                    Next
-                                </Button>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="p-4 bg-blue-50 rounded-full text-blue-600">
+                                        <FileText className="h-8 w-8" />
+                                    </div>
+                                    <p className="font-medium text-gray-900">
+                                        {file ? file.name : "Click to select PDF"}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        Only PDF files are supported. Max 50MB.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="text-center text-gray-400">
-                            <FileText className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                            <p>No document selected</p>
-                        </div>
-                    )}
-                    {previewUrl && (
-                        <p className="mt-4 text-sm text-gray-500">
-                             Previewing Magazine
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+
+                            {file && (
+                                <Button 
+                                    onClick={handleUpload} 
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                    disabled={uploading}
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Publishing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            Publish Magazine
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Preview Section */}
+                    <Card className="lg:row-span-2">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Eye className="h-5 w-5 text-purple-600"/>
+                                Live Preview
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center bg-gray-100/50 min-h-[500px] rounded-lg p-4 justify-center">
+                            {previewUrl ? (
+                                <div className="flex flex-col items-center gap-4">
+                                     <Document
+                                        file={previewUrl}
+                                        onLoadSuccess={onDocumentLoadSuccess}
+                                        className="shadow-xl"
+                                    >
+                                        <Page 
+                                            pageNumber={pageNumber} 
+                                            width={400} 
+                                            renderTextLayer={false} 
+                                            renderAnnotationLayer={false}
+                                        />
+                                    </Document>
+                                    
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPageNumber(p => Math.max(1, p - 1))}
+                                            disabled={pageNumber <= 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <span className="text-sm font-medium text-gray-600">
+                                            Page {pageNumber} of {numPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPageNumber(p => Math.min(numPages, p + 1))}
+                                            disabled={pageNumber >= numPages}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center text-gray-400">
+                                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                                    <p>No document selected</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
+
+            <TabsContent value="planner">
+                <Card>
+                    <CardContent className="pt-6">
+                        <MonthlyPlanner />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="monthly_verse">
+                <div className="max-w-2xl mx-auto">
+                    <PeriodicVerseUploader type="monthly" />
+                </div>
+            </TabsContent>
+
+            <TabsContent value="annual_verse">
+                <div className="max-w-2xl mx-auto">
+                    <PeriodicVerseUploader type="annual" />
+                </div>
+            </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

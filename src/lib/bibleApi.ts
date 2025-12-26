@@ -2,6 +2,10 @@ import { getTamilBibleVerses, parseTamilReference, getTamilBookNames } from "./t
 import { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames } from "./englishBibleService";
 import { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames } from "./kannadaBibleService";
 
+export { getTamilBibleVerses, parseTamilReference, getTamilBookNames };
+export { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames };
+export { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames };
+
 export interface BibleVerse {
   reference: string;
   text: string;

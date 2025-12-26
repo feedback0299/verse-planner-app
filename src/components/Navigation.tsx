@@ -29,6 +29,7 @@ const Navigation = () => {
     { name: 'Magazine', path: '/magazine', icon: BookOpen },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
     { name: 'Admin', path: '/admin', icon: Lock },
+    { name: 'Publisher', path: '/magazine-admin', icon: Lock },
   ];
 
   return (
