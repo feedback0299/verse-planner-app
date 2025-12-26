@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Calendar, Lock, Menu, X } from 'lucide-react';
+import { Home, Calendar, Lock, Menu, X, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -26,8 +26,10 @@ const Navigation = () => {
 
   const navLinks = [
     { name: 'Home', path: '/', icon: Home },
+    { name: 'Magazine', path: '/magazine', icon: BookOpen },
     { name: 'Calendar', path: '/calendar', icon: Calendar },
     { name: 'Admin', path: '/admin', icon: Lock },
+    { name: 'Publisher', path: '/magazine-admin', icon: Lock },
   ];
 
   return (

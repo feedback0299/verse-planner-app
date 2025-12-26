@@ -1,7 +1,8 @@
-import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
-import DailyVerseCalendar from '@/components/DailyVerseCalendar';
+import { Button } from "@/components/ui/button";
+import TodayVerseDisplay from '@/components/TodayVerseDisplay';
+import PeriodicVerseDisplay from '@/components/PeriodicVerseDisplay';
+import BibleSearch from '@/components/BibleSearch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import QRCode from "react-qr-code";
 
@@ -11,37 +12,62 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden bg-spiritual-blue text-white">
+      <section className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-spiritual-blue text-white">
         <div className="absolute inset-0 bg-gradient-to-br from-spiritual-blue to-black opacity-80 z-10" />
         <div 
           className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1773&q=80")' }} 
+          style={{ backgroundImage: 'url("/images/banner-1766498186.jpg")' }} 
         />
-        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-6 animate-fade-in">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-4 drop-shadow-lg">
+        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-4 animate-fade-in">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-2 drop-shadow-lg">
             {currentLanguage === 'ta' ? 'ஆத்துமநேசர் இந்தியா தேவாலயம்' : 'Athumanesar India Church'}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 font-light tracking-wide mb-8">
+          <p className="text-xl md:text-2xl text-spiritual-gold font-medium tracking-wide">
             {currentLanguage === 'ta' ? 'தஞ்சாவூர் தலைமையகம்' : 'Thanjavur Headquarters'}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-             <Link to="/calendar">
-                <Button size="lg" className="bg-spiritual-gold text-spiritual-blue hover:bg-white hover:text-spiritual-blue font-semibold px-8 py-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105">
-                  {currentLanguage === 'ta' ? 'நிகழ்வுகளைப் பார்க்க' : 'View Events'}
-                </Button>
-             </Link>
-             <a href="https://www.youtube.com/results?search_query=ATHUMANESAR+INDIA" target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-spiritual-blue font-semibold px-8 py-6 rounded-full shadow-lg transition-all duration-300">
-                  {currentLanguage === 'ta' ? 'செய்திகளைப் பாருங்கள்' : 'Watch Sermons'}
-                </Button>
-             </a>
-          </div>
         </div>
       </section>
 
-      {/* Daily Verse Section */}
-      <section className="bg-gradient-peaceful py-10">
-          <DailyVerseCalendar />
+      {/* Verses & Search Section */}
+      <section className="bg-slate-50 py-16 px-4 -mt-20 relative z-30 text-spiritual-blue">
+        <div className="max-w-4xl mx-auto space-y-12">
+          
+          {/* Section 1: Annual Verse */}
+          <div id="section1">
+             <PeriodicVerseDisplay type="annual" />
+          </div>
+
+          {/* Section 2: Monthly Verse */}
+          <div id="section2">
+             <PeriodicVerseDisplay type="monthly" />
+          </div>
+
+          {/* Section 3: Today's Verse */}
+          <div id="section3" className="max-w-3xl mx-auto w-full">
+             <TodayVerseDisplay />
+          </div>
+
+          {/* Section 4: Bible Search */}
+          <div id="section4" className="pt-12 border-t border-slate-200">
+             <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold mb-2">
+                    {currentLanguage === 'ta' ? 'வேத வசனத்தைத் தேடுங்கள்' : 'Search the Word'}
+                </h2>
+                <p className="text-slate-500">
+                    {currentLanguage === 'ta' ? 'எந்த ஒரு வசனத்தையும் உடனடியாகக் கண்டறியுங்கள்' : 'Find any verse from the Bible instantly'}
+                </p>
+             </div>
+             <BibleSearch />
+          </div>
+
+          <div className="flex justify-center pt-8">
+             <Link to="/calendar">
+                <Button variant="outline" size="lg" className="rounded-full border-spiritual-blue text-spiritual-blue hover:bg-spiritual-blue hover:text-white px-8">
+                   {currentLanguage === 'ta' ? 'முழு காலெண்டரைப் பார்க்க' : 'View Full Bible Calendar'}
+                </Button>
+             </Link>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}

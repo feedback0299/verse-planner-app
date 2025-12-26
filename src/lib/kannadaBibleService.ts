@@ -33,7 +33,7 @@ const loadKannadaBible = async (): Promise<KannadaBibleData | null> => {
   }
 
   try {
-    const response = await fetch('/bible-ka.json');
+    const response = await fetch('/bible-verse-lang/bible-ka.json');
     if (!response.ok) {
       throw new Error('Failed to load Kannada Bible');
     }

@@ -8,6 +8,9 @@ import Home from "@/pages/Home";
 import CalendarPage from "@/pages/Calendar";
 import Admin from "@/pages/Admin";
 import SuperAdmin from "@/pages/SuperAdmin";
+import Magazine from "@/pages/Magazine";
+import MagazineAdmin from "@/pages/MagazineAdmin";
+import MonthlyPlanner from "@/components/MonthlyPlanner";
 import NotFound from "@/pages/NotFound";
 import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -28,6 +31,9 @@ const App = () => (
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/super-admin" element={<SuperAdmin />} />
+              <Route path="/magazine" element={<Magazine />} />
+              <Route path="/magazine-admin" element={<MagazineAdmin />} />
+              <Route path="/admin/planner" element={<div className="pt-16"><MonthlyPlanner /></div>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

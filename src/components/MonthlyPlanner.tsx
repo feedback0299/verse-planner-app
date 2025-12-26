@@ -8,11 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useVerseContext, VerseEntry } from '@/contexts/VerseContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { searchBibleVerse, getBookNumber } from '@/lib/bibleApi';
+import { 
+  searchBibleVerse, 
+  getBookNumber, 
+  getBookNameFromNumber, 
+  getVerseTextByCoordinates,
+  parseTamilReference,
+  parseEnglishReference,
+  parseKannadaReference
+} from '@/lib/bibleApi';
 import { useToast } from '@/hooks/use-toast';
-import { parseTamilReference } from '@/lib/tamilBibleService';
-import { parseEnglishReference } from '@/lib/englishBibleService';
-import { parseKannadaReference } from '@/lib/kannadaBibleService';
 
 const MonthlyPlanner = () => {
   const { verseEntries, addOrUpdateEntry, getEntry } = useVerseContext();
@@ -57,21 +62,37 @@ const MonthlyPlanner = () => {
     });
   };
 
-  const openEditDialog = (day: number) => {
+  const openEditDialog = async (day: number) => {
     const dateKey = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day);
     const existingEntry = getEntry(dateKey);
     
-    setEditingDate(dateKey);
-    setFormData(existingEntry || {
-      book_name: '',
-      verse_numbers: '',
-      verse_text: '',
-      reference: '',
-      note1: '',
-      note2: '',
-      note3: '',
-      last_updated: ''
-    });
+    if (existingEntry) {
+      setEditingDate(dateKey);
+      
+      // If we have coordinates but no text/name, resolve it
+      if (existingEntry.book_number && existingEntry.verse_numbers && !existingEntry.verse_text) {
+          setIsLoadingVerse(true);
+          const bookName = getBookNameFromNumber(existingEntry.book_number, currentLanguage) || "";
+          const parts = existingEntry.verse_numbers.split(':');
+          const cNum = parts.length > 1 ? parseInt(parts[0], 10) : (existingEntry.chapter_number || 1);
+          const vNum = parts.length > 1 ? parts[1] : existingEntry.verse_numbers;
+          
+          const text = await getVerseTextByCoordinates(existingEntry.book_number, cNum, vNum, currentLanguage);
+          
+          setFormData({
+            ...existingEntry,
+            book_name: bookName,
+            verse_text: text || "",
+            reference: `${bookName} ${existingEntry.verse_numbers}`
+          });
+          setIsLoadingVerse(false);
+      } else {
+          setFormData(existingEntry);
+      }
+    } else {
+      setEditingDate(dateKey);
+      resetFormData();
+    }
     setIsDialogOpen(true);
   };
 
@@ -100,16 +121,14 @@ const MonthlyPlanner = () => {
         // Parsing logic depends on format "Book Chapter:Verse"
         const parsed = currentLanguage === 'ta' 
           ? parseTamilReference(verseData.reference) 
+          : currentLanguage === 'ka'
+          ? parseKannadaReference(verseData.reference)
           : parseEnglishReference(verseData.reference);
 
         if (parsed) {
            bookNum = getBookNumber(parsed.book, currentLanguage);
            chapterNum = parseInt(parsed.chapter, 10);
            verses = parsed.verses;
-        } else {
-            // Fallback parsing from input if reference format is strict/different
-             const parts = formData.verse_numbers.split(':');
-             if (parts.length > 0) chapterNum = parseInt(parts[0], 10);
         }
 
         setFormData(prev => ({
@@ -118,7 +137,7 @@ const MonthlyPlanner = () => {
           verse_text: verseData.text,
           book_number: bookNum || undefined,
           chapter_number: chapterNum || undefined,
-          verse_numbers: parsed ? parsed.verses : formData.verse_numbers // Try to keep normalized
+          verse_numbers: chapterNum && verses ? `${chapterNum}:${verses}` : (verses || prev.verse_numbers)
         }));
 
         toast({
@@ -170,8 +189,10 @@ const MonthlyPlanner = () => {
         ...formData,
         book_number: finalBookNum,
         chapter_number: finalChapterNum,
-        reference: formData.reference || `${formData.book_name} ${formData.verse_numbers}`,
-        verse_text: formData.verse_text || `${formData.book_name} ${formData.verse_numbers}`,
+        // Ensure verse_numbers is in format "Chapter:Verse" if we have coordinates
+        verse_numbers: finalChapterNum && formData.verse_numbers && !formData.verse_numbers.includes(':') 
+            ? `${finalChapterNum}:${formData.verse_numbers}` 
+            : formData.verse_numbers,
       };
 
       addOrUpdateEntry(editingDate, finalData);
