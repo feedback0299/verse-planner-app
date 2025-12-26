@@ -50,7 +50,8 @@ const monthNamesKa = [
 ];
 
 const weekDaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const weekDaysTa = ['ஞாயி', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி'];
+const weekDaysTa = ['ஞாயிறு', 'திங்கள்', 'செவ்வாய்', 'புதன்', 'வியாழன்', 'வெள்ளி', 'சனி'];
+const weekDaysTaShort = ['ஞா', 'திங்', 'செ', 'புத', 'வி', 'வெ', 'சனி'];
 const weekDaysKa = ['ಭಾನು', 'ಸೋಮ', 'ಮಂಗಳ', 'ಬುಧ', 'ಗುರು', 'ಶುಕ್ರ', 'ಶನಿ'];
 
 const DailyVerseCalendar = () => {
@@ -312,9 +313,12 @@ const DailyVerseCalendar = () => {
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 mb-4">
-              {weekDays.map((day) => (
+              {weekDays.map((day, index) => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
-                  {day}
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="inline sm:hidden">
+                    {currentLanguage === 'ta' ? weekDaysTaShort[index] : day.charAt(0)}
+                  </span>
                 </div>
               ))}
             </div>
