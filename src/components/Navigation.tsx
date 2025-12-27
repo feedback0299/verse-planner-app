@@ -11,13 +11,13 @@ const Navigation = () => {
   const { currentLanguage, setLanguage, t } = useLanguage();
 
   const languages = [
-    { code: 'ta', label: 'TAMIL தமிழ்-IN' },
-    { code: 'hi', label: 'HINDI हिंदी-IN' },
-    { code: 'te', label: 'TELEUGU తెలుగు-IN' },
-    { code: 'ka', label: 'KANNADA ಕನ್ನಡ-IN' },
-    { code: 'ml', label: 'MALAYALAM മലയാളം-IN' },
-    { code: 'pu', label: 'PUNJABI ਪੰਜਾਬੀ-IN' },
-    { code: 'en', label: 'English-GB' },
+    { code: 'ta', label: '🇮🇳 TAMIL தமிழ்' },
+    { code: 'hi', label: '🇮🇳 HINDI हिंदी' },
+    { code: 'te', label: '🇮🇳 TELUGU తెలుగు' },
+    { code: 'ka', label: '🇮🇳 KANNADA ಕನ್ನಡ' },
+    { code: 'ml', label: '🇮🇳 MALAYALAM മലയാളം' },
+    { code: 'pu', label: '🇮🇳 PUNJABI ਪੰਜਾਬੀ' },
+    { code: 'en', label: '🇬🇧 English' },
   ];
 
   useEffect(() => {
