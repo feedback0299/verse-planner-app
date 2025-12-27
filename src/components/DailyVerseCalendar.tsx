@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVerseContext } from '@/contexts/VerseContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getPeriodicVerse } from '@/lib/periodicVerseService';
+import { getPeriodicVerse } from '@/lib/commonService/periodicVerseService';
 import { Star } from 'lucide-react';
 import { getBookNameFromNumber, getVerseTextByCoordinates, detectBookNumber } from '@/lib/bibleApi';
 

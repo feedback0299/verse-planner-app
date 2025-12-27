@@ -11,9 +11,13 @@ const Navigation = () => {
   const { currentLanguage, setLanguage, t } = useLanguage();
 
   const languages = [
-    { code: 'ta', label: '🇮🇳 தமிழ்' },
-    { code: 'ka', label: '🇮🇳 ಕನ್ನಡ' },
-    { code: 'en', label: '🇬🇧 English' },
+    { code: 'ta', label: 'TAMIL தமிழ்-IN' },
+    { code: 'hi', label: 'HINDI हिंदी-IN' },
+    { code: 'te', label: 'TELEUGU తెలుగు-IN' },
+    { code: 'ka', label: 'KANNADA ಕನ್ನಡ-IN' },
+    { code: 'ml', label: 'MALAYALAM മലയാളം-IN' },
+    { code: 'pu', label: 'PUNJABI ਪੰਜਾਬੀ-IN' },
+    { code: 'en', label: 'English-GB' },
   ];
 
   useEffect(() => {
@@ -86,7 +90,7 @@ const Navigation = () => {
             <select
               value={currentLanguage}
               onChange={(e) => setLanguage(e.target.value as any)}
-              className={`bg-transparent border text-sm rounded-full px-1 py-1 focus:outline-none cursor-pointer w-24 ${
+              className={`bg-transparent border text-xs rounded-full px-1 py-1 focus:outline-none cursor-pointer w-[140px] ${
                  isScrolled || location.pathname !== '/' 
                  ? 'border-gray-300 text-gray-700' 
                  : 'border-white/30 text-white'

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, Calendar, Star, Target } from 'lucide-react';
-import { uploadMagazinePDF, getMagazineUrl } from '@/lib/magazineService';
+import { uploadMagazinePDF, getMagazineUrl } from '@/lib/commonService/magazineService';
 import { Document, Page, pdfjs } from 'react-pdf';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import PeriodicVerseUploader from '@/components/PeriodicVerseUploader';

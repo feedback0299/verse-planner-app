@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HTMLFlipBook from 'react-pageflip';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { getMagazineUrl } from '@/lib/magazineService';
+import { getMagazineUrl } from '@/lib/commonService/magazineService';
 import { Loader2, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';

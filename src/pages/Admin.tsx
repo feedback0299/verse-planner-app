@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Trash2, LogOut, UserPlus, Users } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
