@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, BookOpen, Loader2 } from 'lucide-react';
-import { searchBibleVerse, getTamilBookNames, getEnglishBookNames } from '@/lib/bibleApi';
+import { searchBibleVerse, getTamilBookNames, getEnglishBookNames, getHindiBookNames, getTeluguBookNames, getKannadaBookNames, getMalayalamBookNames, getPunjabiBookNames } from '@/lib/bibleApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,16 +17,27 @@ const BibleSearch = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const tamilBooks = getTamilBookNames();
-  const englishBooks = getEnglishBookNames();
+  const getBookNamesByLang = (lang: string) => {
+    switch (lang) {
+      case 'ta': return getTamilBookNames();
+      case 'hi': return getHindiBookNames();
+      case 'te': return getTeluguBookNames();
+      case 'ka': return getKannadaBookNames();
+      case 'ml': return getMalayalamBookNames();
+      case 'pu': return getPunjabiBookNames();
+      default: return getEnglishBookNames();
+    }
+  };
 
   const handleBookChange = (val: string) => {
     setQuery({ ...query, book: val });
     if (val.length > 0) {
-      const filtered = tamilBooks.filter((book, index) => {
+      const currentBooks = getBookNamesByLang(currentLanguage);
+      const englishBooks = getEnglishBookNames();
+      const filtered = currentBooks.filter((book, index) => {
         const enBook = englishBooks[index] || "";
-        return book.toLowerCase().startsWith(val.toLowerCase()) || 
-               enBook.toLowerCase().startsWith(val.toLowerCase());
+        return book.toLowerCase().includes(val.toLowerCase()) || 
+               enBook.toLowerCase().includes(val.toLowerCase());
       });
       setSuggestions(filtered);
       setShowSuggestions(true);
@@ -100,7 +111,7 @@ const BibleSearch = () => {
                       className="px-4 py-2 hover:bg-spiritual-blue/5 cursor-pointer text-slate-700 transition-colors"
                       onClick={() => selectSuggestion(s)}
                     >
-                      {s} <span className="text-xs text-slate-400 ml-2">({englishBooks[tamilBooks.indexOf(s)]})</span>
+                      {s} <span className="text-xs text-slate-400 ml-2">({getEnglishBookNames()[getBookNamesByLang(currentLanguage).indexOf(s)]})</span>
                     </div>
                   ))}
                 </div>

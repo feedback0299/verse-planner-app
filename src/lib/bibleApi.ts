@@ -1,10 +1,18 @@
-import { getTamilBibleVerses, parseTamilReference, getTamilBookNames } from "./tamilBibleService";
-import { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames } from "./englishBibleService";
-import { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames } from "./kannadaBibleService";
+import { getTamilBibleVerses, parseTamilReference, getTamilBookNames } from "./bibleService/tamilBibleService";
+import { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames } from "./bibleService/englishBibleService";
+import { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames } from "./bibleService/kannadaBibleService";
+import { getHindiBibleVerses, parseHindiReference, getHindiBookNames } from "./bibleService/hindiBibleService";
+import { getTeluguBibleVerses, parseTeluguReference, getTeluguBookNames } from "./bibleService/teluguBibleService";
+import { getMalayalamBibleVerses, parseMalayalamReference, getMalayalamBookNames } from "./bibleService/malayalamBibleService";
+import { getPunjabiBibleVerses, parsePunjabiReference, getPunjabiBookNames } from "./bibleService/punjabiBibleService";
 
 export { getTamilBibleVerses, parseTamilReference, getTamilBookNames };
 export { getEnglishBibleVerses, parseEnglishReference, getEnglishBookNames };
 export { getKannadaBibleVerses, parseKannadaReference, getKannadaBookNames };
+export { getHindiBibleVerses, parseHindiReference, getHindiBookNames };
+export { getTeluguBibleVerses, parseTeluguReference, getTeluguBookNames };
+export { getMalayalamBibleVerses, parseMalayalamReference, getMalayalamBookNames };
+export { getPunjabiBibleVerses, parsePunjabiReference, getPunjabiBookNames };
 
 export interface BibleVerse {
   reference: string;
@@ -74,6 +82,42 @@ const searchKannadaVerse = async (reference: string): Promise<BibleVerse | null>
   };
 };
 
+const searchHindiVerse = async (reference: string): Promise<BibleVerse | null> => {
+  const parsed = parseHindiReference(reference);
+  if (!parsed) return null;
+  const { book, chapter, verses } = parsed;
+  const text = await getHindiBibleVerses(book, chapter, verses);
+  if (!text) return null;
+  return { reference, text, translation_id: 'hindi', translation_name: 'Hindi Bible' };
+};
+
+const searchTeluguVerse = async (reference: string): Promise<BibleVerse | null> => {
+  const parsed = parseTeluguReference(reference);
+  if (!parsed) return null;
+  const { book, chapter, verses } = parsed;
+  const text = await getTeluguBibleVerses(book, chapter, verses);
+  if (!text) return null;
+  return { reference, text, translation_id: 'telugu', translation_name: 'Telugu Bible' };
+};
+
+const searchMalayalamVerse = async (reference: string): Promise<BibleVerse | null> => {
+  const parsed = parseMalayalamReference(reference);
+  if (!parsed) return null;
+  const { book, chapter, verses } = parsed;
+  const text = await getMalayalamBibleVerses(book, chapter, verses);
+  if (!text) return null;
+  return { reference, text, translation_id: 'malayalam', translation_name: 'Malayalam Bible' };
+};
+
+const searchPunjabiVerse = async (reference: string): Promise<BibleVerse | null> => {
+  const parsed = parsePunjabiReference(reference);
+  if (!parsed) return null;
+  const { book, chapter, verses } = parsed;
+  const text = await getPunjabiBibleVerses(book, chapter, verses);
+  if (!text) return null;
+  return { reference, text, translation_id: 'punjabi', translation_name: 'Punjabi Bible' };
+};
+
 export const searchBibleVerse = async (
   reference: string, 
   language: string = 'ta'
@@ -85,6 +129,14 @@ export const searchBibleVerse = async (
     return searchEnglishVerse(reference);
   } else if (language === 'ka') {
     return searchKannadaVerse(reference);
+  } else if (language === 'hi') {
+    return searchHindiVerse(reference);
+  } else if (language === 'te') {
+    return searchTeluguVerse(reference);
+  } else if (language === 'ml' || language === 'ma') {
+    return searchMalayalamVerse(reference);
+  } else if (language === 'pu') {
+    return searchPunjabiVerse(reference);
   }
   
   // Otherwise use English API for other languages
@@ -184,6 +236,22 @@ export const getBookNumber = (bookName: string, language: string): number | null
     const books = getKannadaBookNames();
     const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
     return index !== -1 ? index + 1 : null;
+  } else if (language === 'hi') {
+    const books = getHindiBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  } else if (language === 'te') {
+    const books = getTeluguBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  } else if (language === 'ml' || language === 'ma') {
+    const books = getMalayalamBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
+  } else if (language === 'pu') {
+    const books = getPunjabiBookNames();
+    const index = books.findIndex((b: string) => b.trim().toLowerCase() === normalizedBook);
+    return index !== -1 ? index + 1 : null;
   }
 };
 
@@ -197,7 +265,19 @@ export const detectBookNumber = (bookName: string): number | null => {
     if (num) return num;
   // Try Kannada
   num = getBookNumber(bookName, 'ka');
-   return num;
+  if (num) return num;
+  // Try Hindi
+  num = getBookNumber(bookName, 'hi');
+  if (num) return num;
+  // Try Telugu
+  num = getBookNumber(bookName, 'te');
+  if (num) return num;
+  // Try Malayalam
+  num = getBookNumber(bookName, 'ml');
+  if (num) return num;
+  // Try Punjabi
+  num = getBookNumber(bookName, 'pu');
+  return num;
 };
 
 export const getBookNameFromNumber = (bookNumber: number, language: string): string | null => {
@@ -211,6 +291,14 @@ export const getBookNameFromNumber = (bookNumber: number, language: string): str
     return getEnglishBookNames()[index] || null;
   } else if (language === 'ka') {
     return getKannadaBookNames()[index] || null;
+  } else if (language === 'hi') {
+    return getHindiBookNames()[index] || null;
+  } else if (language === 'te') {
+    return getTeluguBookNames()[index] || null;
+  } else if (language === 'ml' || language === 'ma') {
+    return getMalayalamBookNames()[index] || null;
+  } else if (language === 'pu') {
+    return getPunjabiBookNames()[index] || null;
   }
 };
 
@@ -229,5 +317,13 @@ export const getVerseTextByCoordinates = async (
     return getEnglishBibleVerses(bookName, chapter.toString(), verseNumbers);
   } else if (language === 'ka') {
     return getKannadaBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'hi') {
+    return getHindiBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'te') {
+    return getTeluguBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'ml' || language === 'ma') {
+    return getMalayalamBibleVerses(bookName, chapter.toString(), verseNumbers);
+  } else if (language === 'pu') {
+    return getPunjabiBibleVerses(bookName, chapter.toString(), verseNumbers);
   }
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getPeriodicVerse } from '@/lib/periodicVerseService';
+import { getPeriodicVerse } from '@/lib/commonService/periodicVerseService';
 import { getBookNameFromNumber, getVerseTextByCoordinates } from '@/lib/bibleApi';
 import { Quote, BookOpen, Star, Target, Loader2 } from 'lucide-react';
 

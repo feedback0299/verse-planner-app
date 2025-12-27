@@ -6,10 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, Save, Loader2, Calendar, Target } from 'lucide-react';
 import { searchBibleVerse, getBookNumber, getBookNameFromNumber, getVerseTextByCoordinates } from '@/lib/bibleApi';
-import { getPeriodicVerse, savePeriodicVerse, PeriodicVerse } from '@/lib/periodicVerseService';
+import { getPeriodicVerse, savePeriodicVerse, PeriodicVerse } from '@/lib/commonService/periodicVerseService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import { parseTamilReference, parseEnglishReference, parseKannadaReference } from '@/lib/bibleApi'; // Corrected import path or logic
+import { 
+  parseTamilReference, 
+  parseEnglishReference, 
+  parseKannadaReference,
+  parseHindiReference,
+  parseTeluguReference,
+  parseMalayalamReference,
+  parsePunjabiReference 
+} from '@/lib/bibleApi';
 
 const PeriodicVerseUploader = ({ type }: { type: 'monthly' | 'annual' }) => {
   const { currentLanguage, t } = useLanguage();

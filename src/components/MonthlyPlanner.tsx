@@ -15,7 +15,11 @@ import {
   getVerseTextByCoordinates,
   parseTamilReference,
   parseEnglishReference,
-  parseKannadaReference
+  parseKannadaReference,
+  parseHindiReference,
+  parseTeluguReference,
+  parseMalayalamReference,
+  parsePunjabiReference
 } from '@/lib/bibleApi';
 import { useToast } from '@/hooks/use-toast';
 
@@ -119,11 +123,14 @@ const MonthlyPlanner = () => {
         let verses = '';
 
         // Parsing logic depends on format "Book Chapter:Verse"
-        const parsed = currentLanguage === 'ta' 
-          ? parseTamilReference(verseData.reference) 
-          : currentLanguage === 'ka'
-          ? parseKannadaReference(verseData.reference)
-          : parseEnglishReference(verseData.reference);
+        let parsed = null;
+        if (currentLanguage === 'ta') parsed = parseTamilReference(verseData.reference);
+        else if (currentLanguage === 'hi') parsed = parseHindiReference(verseData.reference);
+        else if (currentLanguage === 'te') parsed = parseTeluguReference(verseData.reference);
+        else if (currentLanguage === 'ka') parsed = parseKannadaReference(verseData.reference);
+        else if (currentLanguage === 'ml') parsed = parseMalayalamReference(verseData.reference);
+        else if (currentLanguage === 'pu') parsed = parsePunjabiReference(verseData.reference);
+        else parsed = parseEnglishReference(verseData.reference);
 
         if (parsed) {
            bookNum = getBookNumber(parsed.book, currentLanguage);
