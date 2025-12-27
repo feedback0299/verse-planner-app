@@ -6,10 +6,14 @@ import BibleSearch from '@/components/BibleSearch';
 import RandomVerseDisplay from '@/components/RandomVerseDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import QRCode from "react-qr-code";
+import { Facebook, Youtube, MapPin, Phone, ExternalLink } from 'lucide-react';
 
 const Home = () => {
     const { currentLanguage } = useLanguage();
     
+    const churchAddress = "17, Manickam Nagar, M.C. Road, Thanjavur - 613007, TN, INDIA";
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Athumanesar Ministries " + churchAddress)}`;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
@@ -77,34 +81,139 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-spiritual-blue text-white py-12 px-4">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-spiritual-gold">Contact Us</h3>
-            <p className="text-gray-300">Thanjavur, Tamil Nadu</p>
-            <p className="text-gray-300">India</p>
+      <footer className="bg-spiritual-blue text-white py-16 px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+          {/* Contact Section */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-spiritual-gold flex items-center gap-2">
+              <MapPin className="h-6 w-6" />
+              {currentLanguage === 'ta' ? 'எங்களைத் தொடர்பு கொள்ள' : 'Contact Us'}
+            </h3>
+            <div className="space-y-4">
+              <p className="text-gray-200 leading-relaxed font-medium">
+                Athumanesar Ministries,<br />
+                {churchAddress}
+              </p>
+              
+              <div className="rounded-xl overflow-hidden border border-white/10 shadow-lg h-56 w-full group relative">
+                <iframe 
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent("Athumanesar Ministries, 17, Manickam Nagar, M.C. Road, Thanjavur - 613007")}&t=&z=17&ie=UTF8&iwloc=&output=embed`}
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen={true} 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Church Location"
+                  className="grayscale hover:grayscale-0 transition-all duration-500"
+                ></iframe>
+                <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ExternalLink className="h-4 w-4 text-spiritual-blue" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 text-gray-300">
+                  <Phone className="h-4 w-4 text-spiritual-gold" />
+                  9994301076
+                </p>
+                <p className="flex items-center gap-2 text-gray-300 ml-6">
+                  8300000293
+                </p>
+              </div>
+              
+              <a 
+                href={googleMapsUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-spiritual-gold/20 text-spiritual-gold border border-spiritual-gold/30 rounded-full px-5 py-2 transition-all group w-full justify-center md:w-auto"
+              >
+                <span>{currentLanguage === 'ta' ? 'பெரிய வரைபடத்தில் பார்க்க' : 'Open in Google Maps'}</span>
+                <ExternalLink className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              </a>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-spiritual-gold">Service Times</h3>
-            <p className="text-gray-300">Sunday Service: 9:00 AM</p>
-            <p className="text-gray-300">Evening Prayer: 6:00 PM</p>
+
+          {/* Service Times */}
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-spiritual-gold">
+               {currentLanguage === 'ta' ? 'வழிபாட்டு நேரங்கள்' : 'Service Times'}
+            </h3>
+            <div className="space-y-4 text-gray-200">
+              <div className="border-l-2 border-spiritual-gold/30 pl-4 py-1">
+                <p className="font-semibold text-lg">{currentLanguage === 'ta' ? 'ஞாயிறு ஆராதனை' : 'Sunday Service'}</p>
+                <p className="text-gray-300">9:00 AM</p>
+              </div>
+              <div className="border-l-2 border-spiritual-gold/30 pl-4 py-1">
+                <p className="font-semibold text-lg">{currentLanguage === 'ta' ? 'மாலை ஜெபம்' : 'Evening Prayer'}</p>
+                <p className="text-gray-300">6:00 PM</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-spiritual-gold">Connect</h3>
-            <div className="flex justify-center md:justify-start space-x-4 mb-6">
-              <a href="#" className="text-white hover:text-spiritual-gold transition-colors">Facebook</a>
-              <a href="#" className="text-white hover:text-spiritual-gold transition-colors">YouTube</a>
+
+          {/* Connect & QR Section */}
+          <div className="space-y-8">
+            <h3 className="text-2xl font-bold text-spiritual-gold">
+               {currentLanguage === 'ta' ? 'இணையுங்கள்' : 'Connect With Us'}
+            </h3>
+            <div className="flex flex-col gap-4">
+              <a 
+                href="https://www.facebook.com/UCBFINDIA" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-spiritual-gold/10 hover:border-spiritual-gold/30 transition-all group"
+              >
+                <div className="h-12 w-12 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" className="h-12 w-12">
+                    <circle cx="12" cy="12" r="12" fill="#1877F2"/>
+                    <path d="M14.073 19.165v-6.993h2.34l.35-2.717h-2.69V7.72c0-.786.218-1.323 1.347-1.323h1.44V3.97a19.49 19.49 0 0 0-2.098-.107c-2.076 0-3.5 1.267-3.5 3.6v2.008h-2.34v2.717h2.34v6.993h3.15z" fill="white"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold">UCBF India</p>
+                  <p className="text-xs text-gray-400">Follow us on Facebook</p>
+                </div>
+              </a>
+
+              <a 
+                href="https://www.youtube.com/@ATHUMANESARINDIA" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-spiritual-gold/10 hover:border-spiritual-gold/30 transition-all group"
+              >
+                <div className="h-12 w-12 bg-[#FF0000] rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold">Athumanesar India</p>
+                  <p className="text-xs text-gray-400">@ATHUMANESARINDIA</p>
+                </div>
+              </a>
             </div>
             
-            {/* QR Code */}
-            <div className="bg-white p-2 rounded-lg inline-block">
-                <QRCode value={window.location.origin} size={100} />
+            <div className="pt-4 flex flex-col items-center md:items-start gap-3">
+              <div className="bg-white p-3 rounded-2xl shadow-xl hover:scale-105 transition-transform">
+                  <QRCode value={window.location.origin} size={120} />
+              </div>
+              <p className="text-xs text-spiritual-gold/70 font-medium">Scan to visit our mobile portal</p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">Scan to visit website</p>
           </div>
         </div>
-        <div className="mt-8 pt-8 border-t border-white/20 text-center text-sm text-gray-400">
-          © {new Date().getFullYear()} Athumanesar India Church. All rights reserved.
+
+        <div className="mt-16 pt-8 border-t border-white/10">
+          <div className="max-w-6xl mx-auto flex flex-col items-center justify-center text-center space-y-3">
+            <p className="text-spiritual-gold font-bold tracking-widest text-lg">
+              COPYRIGHTS RESERVED
+            </p>
+            <p className="text-gray-300 font-medium md:text-xl">
+              UNITED CHRISTIAN BELIEVERS FELLOWSHIP (UCBF)
+            </p>
+            <p className="text-xs text-gray-500 pt-4">
+              &copy; {new Date().getFullYear()} Athumanesar India Ministries. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
