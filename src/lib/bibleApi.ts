@@ -21,20 +21,64 @@ export interface BibleVerse {
   translation_name: string;
 }
 
+const formatBibleReference = (book: string, chapter: string, verses: string, language: string): string => {
+  let chapterLabel = "Chapter";
+  let verseLabel = "Verse";
+  let versesLabel = "Verses";
+
+  switch (language) {
+    case 'ta':
+      chapterLabel = "அதிகாரம்";
+      verseLabel = "வசனம்";
+      versesLabel = "வசனங்கள்";
+      break;
+    case 'hi':
+      chapterLabel = "अध्याय";
+      verseLabel = "आयत";
+      versesLabel = "आयतों";
+      break;
+    case 'ka':
+      chapterLabel = "ಅಧ್ಯಾಯ";
+      verseLabel = "ವಚನ";
+      versesLabel = "ವಚನಗಳು";
+      break;
+    case 'te':
+      chapterLabel = "అధ్యాయము";
+      verseLabel = "వచనము";
+      versesLabel = "వచనములు";
+      break;
+    case 'ma':
+      chapterLabel = "അധ്യായം";
+      verseLabel = "വാക്യം";
+      versesLabel = "വാക്യങ്ങൾ";
+      break;
+    case 'pu':
+      chapterLabel = "ਅਧਿਆਇ";
+      verseLabel = "ਆਇਤ";
+      versesLabel = "ਆਇਤਾਂ";
+      break;
+  }
+
+  if (!verses || verses.trim() === "") {
+    return `${book} ${chapterLabel} ${chapter}`;
+  }
+
+  const isPlural = verses.includes(',') || verses.includes('-');
+  const label = isPlural ? versesLabel : verseLabel;
+  
+  return `${book} ${chapterLabel} ${chapter} ${label} ${verses}`;
+};
+
 const searchTamilVerse = async (reference: string): Promise<BibleVerse | null> => {
-  // Parse Tamil reference format (e.g., "யோவான் 3:16")
   const parsed = parseTamilReference(reference);
   if (!parsed) return null;
 
   const { book, chapter, verses } = parsed;
-  
-  // Use the Tamil Bible service to get verses
   const text = await getTamilBibleVerses(book, chapter, verses);
-  
   if (!text) return null;
   
   return {
-    reference: reference,
+    reference: formatBibleReference(book, chapter, verses, 'ta'),
     text: text,
     translation_id: 'tamil',
     translation_name: 'Tamil Bible'
@@ -42,19 +86,15 @@ const searchTamilVerse = async (reference: string): Promise<BibleVerse | null> =
 };
 
 const searchEnglishVerse = async (reference: string): Promise<BibleVerse | null> => {
-  // Parse English reference format (e.g., "John 3:16")
   const parsed = parseEnglishReference(reference);
   if (!parsed) return null;
 
   const { book, chapter, verses } = parsed;
-  
-  // Use the English Bible service to get verses
   const text = await getEnglishBibleVerses(book, chapter, verses);
-  
   if (!text) return null;
   
   return {
-    reference: reference,
+    reference: formatBibleReference(book, chapter, verses, 'en'),
     text: text,
     translation_id: 'english',
     translation_name: 'English Bible'
@@ -63,19 +103,15 @@ const searchEnglishVerse = async (reference: string): Promise<BibleVerse | null>
 
 
 const searchKannadaVerse = async (reference: string): Promise<BibleVerse | null> => {
-  // Parse Kannada reference format (e.g., "John 3:16")
   const parsed = parseKannadaReference(reference);
   if (!parsed) return null;
 
   const { book, chapter, verses } = parsed;
-  
-  // Use the Kannada Bible service to get verses
   const text = await getKannadaBibleVerses(book, chapter, verses);
-  
   if (!text) return null;
   
   return {
-    reference: reference,
+    reference: formatBibleReference(book, chapter, verses, 'ka'),
     text: text,
     translation_id: 'kannada',
     translation_name: 'Kannada Bible'
@@ -88,7 +124,12 @@ const searchHindiVerse = async (reference: string): Promise<BibleVerse | null> =
   const { book, chapter, verses } = parsed;
   const text = await getHindiBibleVerses(book, chapter, verses);
   if (!text) return null;
-  return { reference, text, translation_id: 'hindi', translation_name: 'Hindi Bible' };
+  return { 
+    reference: formatBibleReference(book, chapter, verses, 'hi'), 
+    text, 
+    translation_id: 'hindi', 
+    translation_name: 'Hindi Bible' 
+  };
 };
 
 const searchTeluguVerse = async (reference: string): Promise<BibleVerse | null> => {
@@ -97,7 +138,12 @@ const searchTeluguVerse = async (reference: string): Promise<BibleVerse | null> 
   const { book, chapter, verses } = parsed;
   const text = await getTeluguBibleVerses(book, chapter, verses);
   if (!text) return null;
-  return { reference, text, translation_id: 'telugu', translation_name: 'Telugu Bible' };
+  return { 
+    reference: formatBibleReference(book, chapter, verses, 'te'), 
+    text, 
+    translation_id: 'telugu', 
+    translation_name: 'Telugu Bible' 
+  };
 };
 
 const searchMalayalamVerse = async (reference: string): Promise<BibleVerse | null> => {
@@ -106,7 +152,12 @@ const searchMalayalamVerse = async (reference: string): Promise<BibleVerse | nul
   const { book, chapter, verses } = parsed;
   const text = await getMalayalamBibleVerses(book, chapter, verses);
   if (!text) return null;
-  return { reference, text, translation_id: 'malayalam', translation_name: 'Malayalam Bible' };
+  return { 
+    reference: formatBibleReference(book, chapter, verses, 'ml'), 
+    text, 
+    translation_id: 'malayalam', 
+    translation_name: 'Malayalam Bible' 
+  };
 };
 
 const searchPunjabiVerse = async (reference: string): Promise<BibleVerse | null> => {
@@ -115,7 +166,12 @@ const searchPunjabiVerse = async (reference: string): Promise<BibleVerse | null>
   const { book, chapter, verses } = parsed;
   const text = await getPunjabiBibleVerses(book, chapter, verses);
   if (!text) return null;
-  return { reference, text, translation_id: 'punjabi', translation_name: 'Punjabi Bible' };
+  return { 
+    reference: formatBibleReference(book, chapter, verses, 'pu'), 
+    text, 
+    translation_id: 'punjabi', 
+    translation_name: 'Punjabi Bible' 
+  };
 };
 
 export const searchBibleVerse = async (
