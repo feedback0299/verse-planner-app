@@ -88,7 +88,7 @@ const RandomVerseDisplay = () => {
           <blockquote className="text-xl font-medium text-slate-700 leading-relaxed italic mb-4">
             "{verse.text}"
           </blockquote>
-          <div className="flex items-center gap-2 text-spiritual-gold font-bold">
+          <div className="flex items-center gap-2 text-spiritual-blue font-bold">
             <BookOpen className="h-4 w-4" />
             {verse.reference}
           </div>

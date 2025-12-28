@@ -54,11 +54,13 @@ const BibleSearch = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.book || !query.verse) return;
+    const book = query.book.trim();
+    const verseRef = query.verse.trim();
+    if (!book || !verseRef) return;
 
     setSearching(true);
     try {
-      const reference = `${query.book} ${query.verse}`;
+      const reference = `${book} ${verseRef}`;
       const data = await searchBibleVerse(reference, currentLanguage);
       if (data) {
         setResult({ text: data.text, reference: data.reference });
@@ -136,11 +138,11 @@ const BibleSearch = () => {
 
         {result && (
           <div className="mt-8 p-6 bg-gradient-spiritual/5 rounded-xl border border-spiritual-blue/10 animate-fade-in">
-            <div className="flex items-center gap-2 mb-4 text-spiritual-gold">
+            <div className="flex items-center gap-2 mb-4 text-spiritual-blue">
                <BookOpen className="h-5 w-5" />
                <span className="font-semibold">{result.reference}</span>
             </div>
-            <p className="text-lg leading-relaxed text-slate-800 italic">
+            <p className="text-lg leading-relaxed text-slate-800 italic whitespace-pre-wrap">
                "{result.text}"
             </p>
           </div>

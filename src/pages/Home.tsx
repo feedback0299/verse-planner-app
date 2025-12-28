@@ -6,7 +6,7 @@ import BibleSearch from '@/components/BibleSearch';
 import RandomVerseDisplay from '@/components/RandomVerseDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import QRCode from "react-qr-code";
-import { Facebook, Youtube, MapPin, Phone, ExternalLink } from 'lucide-react';
+import { MapPin, Phone, ExternalLink } from 'lucide-react';
 
 const Home = () => {
     const { currentLanguage } = useLanguage();
@@ -115,10 +115,10 @@ const Home = () => {
               <div className="space-y-2">
                 <p className="flex items-center gap-2 text-gray-300">
                   <Phone className="h-4 w-4 text-spiritual-gold" />
-                  9994301076
+                  +91 9994301076
                 </p>
                 <p className="flex items-center gap-2 text-gray-300 ml-6">
-                  8300000293
+                  +91 8300000293
                 </p>
               </div>
               

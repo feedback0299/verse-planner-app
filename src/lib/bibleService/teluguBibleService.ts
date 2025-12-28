@@ -13,11 +13,11 @@ const TeluguBooks = [
     "ఆదికాండము", "నిర్గమకాండము", "లేవీయకాండము", "సంఖ్యాకాండము", "ద్వితీయోపదేశకాండమ", "యెహొషువ",
     "న్యాయాధిపతులు", "రూతు", "సమూయేలు మొదటి గ్రంథము", "సమూయేలు రెండవ గ్రంథము", "రాజులు మొదటి గ్రంథము",
     "రాజులు రెండవ గ్రంథము", "దినవృత్తాంతములు మొదటి గ్రంథము", "దినవృత్తాంతములు రెండవ గ్రంథము", "ఎజ్రా", "నెహెమ్యా", "ఎస్తేరు", "యోబు గ్రంథము",
-    "కీర్తనల గ్రంథము", "సామెతలు", "ప్రసంగి", "పరమగీతము", "యెషయా గ్రంథము", "యిర్మీయా", "విలాపవాక్యములు", "యెహెజ్కేలు",
+    "కీర్తనల గ్రంథము", "సామెతలు", "ప్రసಂಗి", "పరమగీతము", "యెషయా గ్రంథము", "యిర్మీయా", "విలాపవాక్యములు", "యెహెజ్కేలు",
     "దానియేలు", "హొషేయ", "యోవేలు", "ఆమోసు", "ఓబద్యా", "యోనా", "మీకా", "నహూము", "హబక్కూకు", "జెఫన్యా",
     "హగ్గయి", "జెకర్యా", "మలాకీ", "మత్తయి సువార్త", "మార్కు సువార్త", "లూకా సువార్త", "యోహాను సువార్త", "అపొస్తలుల కార్యములు",
     "రోమీయులకు", "1 కొరింథీయులకు", "2 కొరింథీయులకు", "గలతీయులకు", "ఎఫెసీయులకు", "ఫిలిప్పీయులకు",
-    "కొలొస్సయులకు", "1 థెస్సలొనీకయులకు", "2 థెస్సలొనీకయులకు", "1 తిమోతికి", "2 తిమోతికి", "తీతుకు", "ఫిలేమోనుకు",
+    "కొలొస్సయులకు", "1 థెస్సలొనీకయులకు", "2 థెస్సలೊనీకయులకు", "1 తిమోతికి", "2 తిమోతికి", "తీతుకు", "ఫిలేమోనుకు",
     "హెబ్రీయులకు", "యాకోబు", "1 పేతురు", "2 పేతురు", "1 యోహాను", "2 యోహాను", "3 యోహాను", "యూదా", "ప్రకటన గ్రంథము"
 ];
 
@@ -64,17 +64,34 @@ export const getTeluguBibleVerses = async (
   if (isNaN(chapterIndex) || chapterIndex < 0) return null;
 
   // Check if chapter exists
-  if (!bibleData.Book[bookIndex]?.Chapter[chapterIndex]) return null;
+  const chapter = bibleData.Book[bookIndex]?.Chapter[chapterIndex];
+  if (!chapter) return null;
+
+  // If verses is empty, get all verses in the chapter
+  if (!verses || verses.trim() === "") {
+    const allVerses = chapter.Verse.map((v, i) => `${i + 1}. ${v.Verse}`);
+    return allVerses.join('\n');
+  }
 
   // Verse indices (handle comma-separated input)
-  const verseIndices = verses.split(',').map(v => parseInt(v.trim(), 10) - 1);
+  const verseIndices = verses.split(',').map(v => {
+    // Handle ranges like "1-3"
+    if (v.includes('-')) {
+      const [start, end] = v.split('-').map(p => parseInt(p.trim(), 10));
+      if (!isNaN(start) && !isNaN(end)) {
+        return Array.from({ length: end - start + 1 }, (_, i) => start + i - 1);
+      }
+    }
+    return parseInt(v.trim(), 10) - 1;
+  }).flat();
 
   // Retrieve verses
   const selectedVerses = verseIndices.map(idx => {
-    return bibleData.Book[bookIndex].Chapter[chapterIndex].Verse[idx]?.Verse || "";
-  }).filter(v => v); // Remove empty verses
+    const verseText = chapter.Verse[idx]?.Verse;
+    return verseText ? `${idx + 1}. ${verseText}` : "";
+  }).filter(v => v);
 
-  return selectedVerses.length > 0 ? selectedVerses.join(' ') : null;
+  return selectedVerses.length > 0 ? selectedVerses.join('\n') : null;
 };
 
 /**
@@ -85,7 +102,7 @@ export const getTeluguBookNames = (): string[] => {
 };
 
 /**
- * Parse Telugu reference format (e.g., "யோவான் 3:16" or "யோவான் 3:16,17")
+ * Parse Telugu reference format (e.g., "యెహోవాను 3:16")
  */
 export const parseTeluguReference = (reference: string): {
   book: string;
@@ -94,20 +111,27 @@ export const parseTeluguReference = (reference: string): {
 } | null => {
   const trimmed = reference.trim();
   
-  // Split by space to separate book name from chapter:verse
+  // Split by space to separate book name from chapter:verse or chapter
   const lastSpaceIndex = trimmed.lastIndexOf(' ');
   if (lastSpaceIndex === -1) return null;
 
   const bookName = trimmed.substring(0, lastSpaceIndex).trim();
   const chapterVerse = trimmed.substring(lastSpaceIndex + 1).trim();
 
-  // Split chapter:verse
-  const [chapter, verses] = chapterVerse.split(':');
-  if (!chapter || !verses) return null;
-
-  return {
-    book: bookName,
-    chapter: chapter.trim(),
-    verses: verses.trim()
-  };
+  // Split chapter:verse or just chapter
+  if (chapterVerse.includes(':')) {
+    const [chapter, verses] = chapterVerse.split(':');
+    return {
+      book: bookName,
+      chapter: chapter.trim(),
+      verses: verses.trim()
+    };
+  } else {
+    // Chapter only search
+    return {
+      book: bookName,
+      chapter: chapterVerse.trim(),
+      verses: ""
+    };
+  }
 };
