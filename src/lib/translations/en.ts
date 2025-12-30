@@ -63,5 +63,22 @@ export const en_translations = {
     bengali: "Bengali",
     marathi: "Marathi",
     punjabi: "Punjabi"
+  },
+  home: {
+    churchName: "Athumanesar India Church",
+    headquarters: "Thanjavur Headquarters",
+    searchTitle: "Search the Word",
+    searchSubtitle: "Find any verse from the Bible instantly",
+    viewFullCalendar: "View Full Bible Calendar",
+    contactUs: "Contact Us",
+    openGoogleMaps: "Open in Google Maps",
+    serviceTimes: "Service Times",
+    sundayService: "Sunday Service",
+    eveningPrayer: "Evening Prayer",
+    connectWithUs: "Connect With Us",
+    followFacebook: "Follow us on Facebook",
+    scanMobilePortal: "Scan to visit our mobile portal",
+    shareLocation: "Share Location",
+    shareApp: "Share App"
   }
 };

@@ -63,5 +63,22 @@ export const hi_translations = {
     bengali: "बंगाली",
     marathi: "मराठी",
     punjabi: "पंजाबी"
+  },
+  home: {
+    churchName: "आथुनेसर इंडिया चर्च",
+    headquarters: "तंजावुर मुख्यालय",
+    searchTitle: "वचन खोजें",
+    searchSubtitle: "बाइबिल से किसी भी वचन को तुरंत खोजें",
+    viewFullCalendar: "पूरा बाइबिल कैलेंडर देखें",
+    contactUs: "संपर्क करें",
+    openGoogleMaps: "गूगल मैप्स में खोलें",
+    serviceTimes: "सेवाया का समय",
+    sundayService: "रविवार सेवा",
+    eveningPrayer: "शाम की प्रार्थना",
+    connectWithUs: "हमारे साथ जुड़ें",
+    followFacebook: "फेसबुक पर हमें फॉलो करें",
+    scanMobilePortal: "हमारे मोबाइल पोर्टल पर जाने के लिए स्कैन करें",
+    shareLocation: "स्थान साझा करें",
+    shareApp: "ऐप साझा करें"
   }
 };

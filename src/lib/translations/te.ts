@@ -63,5 +63,22 @@ export const te_translations = {
     bengali: "బెంగాలీ",
     marathi: "మరాఠీ",
     punjabi: "పంజాబీ"
+  },
+  home: {
+    churchName: "ఆతుమనేసర్ ఇండియా చర్చి",
+    headquarters: "తంజావూరు ప్రధాన కార్యాలయం",
+    searchTitle: "వాక్యాన్ని వెతకండి",
+    searchSubtitle: "బైబిల్ నుండి ఏదైనా వాక్యాన్ని వెంటనే కనుగొనండి",
+    viewFullCalendar: "పూర్తి బైబిల్ క్యాలెండర్‌ను చూడండి",
+    contactUs: "మమ్మల్ని సంప్రదించండి",
+    openGoogleMaps: "గూగుల్ మ్యాప్స్‌లో తెరవండి",
+    serviceTimes: "ఆరాధన సమయాలు",
+    sundayService: "ఆదివారం ఆరాధన",
+    eveningPrayer: "సాయంత్రం ప్రార్థన",
+    connectWithUs: "మాతో కనెక్ట్ అవ్వండి",
+    followFacebook: "ఫేస్‌బుక్‌లో మమ్మల్ని అనుసరించండి",
+    scanMobilePortal: "మా మొబైల్ పోర్టల్‌ని సందర్శించడానికి స్కాన్ చేయండి",
+    shareLocation: "స్థానాన్ని భాగస్వామ్యం చేయండి",
+    shareApp: "యాప్‌ను భాగస్వామ్యం చేయండి"
   }
 };

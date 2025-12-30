@@ -25,6 +25,44 @@ const allTranslations = {
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState<Language>('ta');
+  // const [currentLanguage, setCurrentLanguage] = useState<Language>('en'); // Default to English initially
+
+  // React.useEffect(() => {
+  //   const detectLocation = async () => {
+  //     try {
+  //       const response = await fetch('https://ipapi.co/json/');
+  //       if (!response.ok) throw new Error('Failed to fetch IP location');
+  //       const data = await response.json();
+        
+  //       // Region detection for India
+  //       if (data.country_code === 'IN') {
+  //         const region = data.region_code;
+  //         if (region === 'TN') {
+  //           setCurrentLanguage('ta'); // Tamil
+  //         } else if (region === 'KL') {
+  //           setCurrentLanguage('ml'); // Malayalam
+  //         } else if (region === 'KA') {
+  //           setCurrentLanguage('ka'); // Kannada
+  //         } else if (region === 'PB') {
+  //           setCurrentLanguage('pu'); // Punjabi
+  //         } else if (region === 'AP' || region === 'TG') {
+  //           setCurrentLanguage('te'); // Telugu
+  //         } else {
+  //           // Default to Hindi for other Indian states if they are majority Hindi speakers
+  //           // or fallback to English if preferred.
+  //           setCurrentLanguage('hi'); 
+  //         }
+  //       } else {
+  //         setCurrentLanguage('en'); // Default for other countries
+  //       }
+  //     } catch (error) {
+  //       console.error('Error detecting location:', error);
+  //       setCurrentLanguage('en'); // Fallback to English
+  //     }
+  //   };
+
+  //   detectLocation();
+  // }, []);
 
   // Create a stable setLanguage function that matches the interface
   const setLanguage = (lang: Language) => {
