@@ -1,5 +1,11 @@
 export const ka_translations = {
   navigation: {
+    home: "ಮನೆ",
+    magazine: "ಪತ್ರಿಕೆ",
+    calendar: "ಕ್ಯಾಲೆಂಡರ್",
+    admin: "ಕಾರ್ಯಕ್ರಮ ನಿರ್ವಾಹಕ",
+    publisher: "ನಿರ್ವಾಹಕ",
+    members: "ಸದಸ್ಯರು",
     dailyVerses: "ದಿನನಿತ್ಯದ ವಚನಗಳು",
     monthlyPlanner: "ಮಾಸಿಕ ಯೋಜಕ"
   },

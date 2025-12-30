@@ -1,7 +1,13 @@
 export const ta_translations = {
   navigation: {
+    home: "முகப்பு",
+    magazine: "பத்திரிகை",
+    calendar: "காலண்டர்",
+    live: "நேரலை",
+    admin: "நிர்வாகம்",
+    publisher: "பதிப்பாளர்",
     dailyVerses: "தினசரி வசனங்கள்",
-    monthlyPlanner: "மாதாந்திர திட்டமிடல்"
+    monthlyPlanner: "மாதાந்திர പദ്ധതി"
   },
   calendar: {
     daily: {

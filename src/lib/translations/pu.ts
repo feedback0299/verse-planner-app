@@ -1,5 +1,11 @@
 export const pu_translations = {
   navigation: {
+    home: "ਹੋਮ",
+    magazine: "ਮੈਗਜ਼ੀਨ",
+    calendar: "ਕੈਲੰਡਰ",
+    admin: "ਇਵੈਂਟ ਐਡਮਿਨ",
+    publisher: "ਐਡਮਿਨ",
+    members: "ਮੈਂਬਰ",
     dailyVerses: "ਰੋਜ਼ਾਨਾ ਆਇਤਾਂ",
     monthlyPlanner: "ਮਾਸਿਕ ਯੋਜਨਾਕਾਰ"
   },

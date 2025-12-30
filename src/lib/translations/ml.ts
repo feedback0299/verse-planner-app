@@ -1,5 +1,11 @@
 export const ml_translations = {
   navigation: {
+    home: "ഹോം",
+    magazine: "മാഗസിൻ",
+    calendar: "കലണ്ടർ",
+    admin: "ഇവന്റ് അഡ്മിൻ",
+    publisher: "അഡ്മിൻ",
+    members: "അംഗങ്ങൾ",
     dailyVerses: "ദൈനംദിന വചനങ്ങൾ",
     monthlyPlanner: "പ്രതിമാസ പ്ലാനർ"
   },

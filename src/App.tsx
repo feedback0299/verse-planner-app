@@ -10,6 +10,7 @@ import Admin from "@/pages/Admin";
 import SuperAdmin from "@/pages/SuperAdmin";
 import Magazine from "@/pages/Magazine";
 import MagazineAdmin from "@/pages/MagazineAdmin";
+import Members from "@/pages/Members";
 import MonthlyPlanner from "@/components/MonthlyPlanner";
 import NotFound from "@/pages/NotFound";
 import { VerseProvider } from "@/contexts/VerseContext";
@@ -29,10 +30,11 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route path="/members" element={<Members />} />
+              <Route path="/admin" element={<MagazineAdmin />} />
+              <Route path="/events-admin" element={<Admin />} />
               <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/magazine" element={<Magazine />} />
-              <Route path="/magazine-admin" element={<MagazineAdmin />} />
               <Route path="/admin/planner" element={<div className="pt-16"><MonthlyPlanner /></div>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
