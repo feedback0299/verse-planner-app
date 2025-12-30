@@ -1,5 +1,11 @@
 export const te_translations = {
   navigation: {
+    home: "హోమ్",
+    magazine: "పత్రిక",
+    calendar: "క్యాలెండర్",
+    admin: "ఈవెంట్ అడ్మిన్",
+    publisher: "అడ్మిన్",
+    members: "సభ్యులు",
     dailyVerses: "రోజువారీ వాక్యాలు",
     monthlyPlanner: "నెలవారీ ప్లానర్"
   },

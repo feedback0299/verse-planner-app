@@ -1,5 +1,11 @@
 export const en_translations = {
   navigation: {
+    home: "Home",
+    magazine: "Magazine",
+    calendar: "Calendar",
+    admin: "Events Admin",
+    publisher: "Admin",
+    members: "Members",
     dailyVerses: "Daily Verses",
     monthlyPlanner: "Monthly Planner"
   },

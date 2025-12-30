@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Calendar, Lock, Menu, X, BookOpen } from 'lucide-react';
+import { Home, Calendar, Lock, Menu, X, BookOpen, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -29,11 +29,11 @@ const Navigation = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Magazine', path: '/magazine', icon: BookOpen },
-    { name: 'Calendar', path: '/calendar', icon: Calendar },
-    { name: 'Admin', path: '/admin', icon: Lock },
-    { name: 'Publisher', path: '/magazine-admin', icon: Lock },
+    { name: t('navigation.home'), path: '/', icon: Home },
+    { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen },
+    { name: t('navigation.calendar'), path: '/calendar', icon: Calendar },
+    { name: t('navigation.publisher'), path: '/admin', icon: Lock },
+    { name: t('navigation.admin'), path: '/events-admin', icon: Lock },
   ];
 
   return (
@@ -53,7 +53,7 @@ const Navigation = () => {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-4">
             {navLinks.map((link) => (
-              <Link key={link.name} to={link.path}>
+              <Link key={link.path} to={link.path}>
                 <Button 
                   variant="ghost" 
                   className={`rounded-full px-4 hover:bg-spiritual-gold/20 ${
@@ -121,7 +121,7 @@ const Navigation = () => {
           <div className="flex flex-col space-y-4">
             {navLinks.map((link) => (
               <Link 
-                key={link.name} 
+                key={link.path} 
                 to={link.path}
                 onClick={() => setIsMobileMenuOpen(false)}
               >

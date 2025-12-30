@@ -1,5 +1,11 @@
 export const hi_translations = {
   navigation: {
+    home: "होम",
+    magazine: "पत्रिका",
+    calendar: "कैलेंडर",
+    admin: "इवेंट एडमिन",
+    publisher: "एडमिन",
+    members: "सदस्य",
     dailyVerses: "दैनिक वचन",
     monthlyPlanner: "मासिक योजनाकार"
   },
