@@ -25,6 +25,18 @@ const formatBibleReference = (book: string, chapter: string, verses: string, lan
   let chapterLabel = "Chapter";
   let verseLabel = "Verse";
   let versesLabel = "Verses";
+  let displayBook = book;
+
+  // For non-English languages, append English book name in parentheses
+  if (language !== 'en') {
+    const bookNum = getBookNumber(book, language);
+    if (bookNum) {
+      const englishBookName = getEnglishBookNames()[bookNum - 1];
+      if (englishBookName && englishBookName.toLowerCase() !== book.toLowerCase()) {
+        displayBook = `${book} (${englishBookName})`;
+      }
+    }
+  }
 
   switch (language) {
     case 'ta':
@@ -48,6 +60,7 @@ const formatBibleReference = (book: string, chapter: string, verses: string, lan
       versesLabel = "వచనములు";
       break;
     case 'ma':
+    case 'ml':
       chapterLabel = "അധ്യായം";
       verseLabel = "വാക്യം";
       versesLabel = "വാക്യങ്ങൾ";
@@ -60,13 +73,13 @@ const formatBibleReference = (book: string, chapter: string, verses: string, lan
   }
 
   if (!verses || verses.trim() === "") {
-    return `${book} ${chapterLabel} ${chapter}`;
+    return `${displayBook} ${chapterLabel} ${chapter}`;
   }
 
   const isPlural = verses.includes(',') || verses.includes('-');
   const label = isPlural ? versesLabel : verseLabel;
   
-  return `${book} ${chapterLabel} ${chapter} ${label} ${verses}`;
+  return `${displayBook} ${chapterLabel} ${chapter} ${label} ${verses}`;
 };
 
 const searchTamilVerse = async (reference: string): Promise<BibleVerse | null> => {

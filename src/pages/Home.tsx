@@ -9,7 +9,7 @@ import QRCode from "react-qr-code";
 import { MapPin, Phone, ExternalLink } from 'lucide-react';
 
 const Home = () => {
-    const { currentLanguage } = useLanguage();
+    const { currentLanguage, t } = useLanguage();
     
     const churchAddress = "17, Manickam Nagar, M.C. Road, Thanjavur - 613007, TN, INDIA";
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Athumanesar Ministries " + churchAddress)}`;
@@ -25,10 +25,10 @@ const Home = () => {
         />
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto space-y-4 animate-fade-in">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-2 drop-shadow-lg">
-            {currentLanguage === 'ta' ? 'ஆத்துமநேசர் இந்தியா தேவாலயம்' : 'Athumanesar India Church'}
+            {t('home.churchName')}
           </h1>
           <p className="text-xl md:text-2xl text-spiritual-gold font-medium tracking-wide">
-            {currentLanguage === 'ta' ? 'தஞ்சாவூர் தலைமையகம்' : 'Thanjavur Headquarters'}
+            {t('home.headquarters')}
           </p>
         </div>
       </section>
@@ -61,10 +61,10 @@ const Home = () => {
           <div id="section4" className="pt-12 border-t border-slate-200">
              <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold mb-2">
-                    {currentLanguage === 'ta' ? 'வேத வசனத்தைத் தேடுங்கள்' : 'Search the Word'}
+                    {t('home.searchTitle')}
                 </h2>
                 <p className="text-slate-500">
-                    {currentLanguage === 'ta' ? 'எந்த ஒரு வசனத்தையும் உடனடியாகக் கண்டறியுங்கள்' : 'Find any verse from the Bible instantly'}
+                    {t('home.searchSubtitle')}
                 </p>
              </div>
              <BibleSearch />
@@ -73,7 +73,7 @@ const Home = () => {
           <div className="flex justify-center pt-8">
              <Link to="/calendar">
                 <Button variant="outline" size="lg" className="rounded-full border-spiritual-blue text-spiritual-blue hover:bg-spiritual-blue hover:text-white px-8">
-                   {currentLanguage === 'ta' ? 'முழு காலெண்டரைப் பார்க்க' : 'View Full Bible Calendar'}
+                   {t('home.viewFullCalendar')}
                 </Button>
              </Link>
           </div>
@@ -87,7 +87,7 @@ const Home = () => {
           <div className="space-y-6">
             <h3 className="text-2xl font-bold text-spiritual-gold flex items-center gap-2">
               <MapPin className="h-6 w-6" />
-              {currentLanguage === 'ta' ? 'எங்களைத் தொடர்பு கொள்ள' : 'Contact Us'}
+              {t('home.contactUs')}
             </h3>
             <div className="space-y-4">
               <p className="text-gray-200 leading-relaxed font-medium">
@@ -117,7 +117,8 @@ const Home = () => {
                   <Phone className="h-4 w-4 text-spiritual-gold" />
                   +91 9994301076
                 </p>
-                <p className="flex items-center gap-2 text-gray-300 ml-6">
+                <p className="flex items-center gap-2 text-gray-300">
+                  <Phone className="h-4 w-4 text-spiritual-gold" />
                   +91 8300000293
                 </p>
               </div>
@@ -128,7 +129,7 @@ const Home = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-spiritual-gold/20 text-spiritual-gold border border-spiritual-gold/30 rounded-full px-5 py-2 transition-all group w-full justify-center md:w-auto"
               >
-                <span>{currentLanguage === 'ta' ? 'பெரிய வரைபடத்தில் பார்க்க' : 'Open in Google Maps'}</span>
+                <span>{t('home.openGoogleMaps')}</span>
                 <ExternalLink className="h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </a>
             </div>
@@ -137,15 +138,15 @@ const Home = () => {
           {/* Service Times */}
           <div className="space-y-6">
             <h3 className="text-2xl font-bold text-spiritual-gold">
-               {currentLanguage === 'ta' ? 'வழிபாட்டு நேரங்கள்' : 'Service Times'}
+               {t('home.serviceTimes')}
             </h3>
             <div className="space-y-4 text-gray-200">
               <div className="border-l-2 border-spiritual-gold/30 pl-4 py-1">
-                <p className="font-semibold text-lg">{currentLanguage === 'ta' ? 'ஞாயிறு ஆராதனை' : 'Sunday Service'}</p>
+                <p className="font-semibold text-lg">{t('home.sundayService')}</p>
                 <p className="text-gray-300">9:00 AM</p>
               </div>
               <div className="border-l-2 border-spiritual-gold/30 pl-4 py-1">
-                <p className="font-semibold text-lg">{currentLanguage === 'ta' ? 'மாலை ஜெபம்' : 'Evening Prayer'}</p>
+                <p className="font-semibold text-lg">{t('home.eveningPrayer')}</p>
                 <p className="text-gray-300">6:00 PM</p>
               </div>
             </div>
@@ -154,7 +155,7 @@ const Home = () => {
           {/* Connect & QR Section */}
           <div className="space-y-8">
             <h3 className="text-2xl font-bold text-spiritual-gold">
-               {currentLanguage === 'ta' ? 'இணையுங்கள்' : 'Connect With Us'}
+               {t('home.connectWithUs')}
             </h3>
             <div className="flex flex-col gap-4">
               <a 
@@ -171,7 +172,7 @@ const Home = () => {
                 </div>
                 <div>
                   <p className="font-bold">UCBF India</p>
-                  <p className="text-xs text-gray-400">Follow us on Facebook</p>
+                  <p className="text-xs text-gray-400">{t('home.followFacebook')}</p>
                 </div>
               </a>
 
@@ -197,7 +198,7 @@ const Home = () => {
               <div className="bg-white p-3 rounded-2xl shadow-xl hover:scale-105 transition-transform">
                   <QRCode value={window.location.origin} size={120} />
               </div>
-              <p className="text-xs text-spiritual-gold/70 font-medium">Scan to visit our mobile portal</p>
+              <p className="text-xs text-spiritual-gold/70 font-medium">{t('home.scanMobilePortal')}</p>
             </div>
           </div>
         </div>

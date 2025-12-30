@@ -58,10 +58,27 @@ export const ta_translations = {
     hindi: "இந்தி",
     telugu: "தெலுங்கு",
     kannada: "கன்னடம்",
-    malayalam: "மலையாளம்",
+    malayalam: "மலையாளം",
     gujarati: "குஜராத்தி",
     bengali: "வங்காளி",
     marathi: "மராத்தி",
     punjabi: "பஞ்சாபி"
+  },
+  home: {
+    churchName: "ஆத்துமநேசர் இந்தியா தேவாலயம்",
+    headquarters: "தஞ்சாவூர் தலைமையகம்",
+    searchTitle: "வேத வசனத்தைத் தேடுங்கள்",
+    searchSubtitle: "எந்த ஒரு வசனத்தையும் உடனடியாகக் கண்டறியுங்கள்",
+    viewFullCalendar: "முழு காலெண்டரைப் பார்க்க",
+    contactUs: "எங்களைத் தொடர்பு கொள்ள",
+    openGoogleMaps: "பெரிய வரைபடத்தில் பார்க்க",
+    serviceTimes: "வழிபாட்டு நேரங்கள்",
+    sundayService: "ஞாயிறு ஆராதனை",
+    eveningPrayer: "மாலை ஜெபம்",
+    connectWithUs: "இணையுங்கள்",
+    followFacebook: "பேஸ்புக்கில் எங்களைப் பின்தொடரவும்",
+    scanMobilePortal: "எங்கள் மொபைல் போர்ட்டலைப் பார்வையிட ஸ்கேன் செய்யவும்",
+    shareLocation: "இருப்பிடத்தைப் பகிரவும்",
+    shareApp: "செயலியைப் பகிரவும்"
   }
 };

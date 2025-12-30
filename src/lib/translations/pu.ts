@@ -60,5 +60,22 @@ export const pu_translations = {
     kannada: "ਕੰਨੜ",
     malayalam: "ਮਲਿਆਲਮ",
     punjabi: "ਪੰਜਾਬੀ"
+  },
+  home: {
+    churchName: "ਆਤੁਮਨੇਸਰ ਇੰਡੀਆ ਚਰਚ",
+    headquarters: "ਤੰਜਾਵੁਰ ਹੈੱਡਕੁਆਰਟਰ",
+    searchTitle: "ਸ਼ਬਦ ਦੀ ਖੋਜ ਕਰੋ",
+    searchSubtitle: "ਬਾਈਬਲ ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਆਇਤ ਤੁਰੰਤ ਲੱਭੋ",
+    viewFullCalendar: "ਪੂਰਾ ਬਾਈਬਲ ਕੈਲੰਡਰ ਦੇਖੋ",
+    contactUs: "ਸਾਡੇ ਨਾਲ ਸੰਪਰਕ ਕਰੋ",
+    openGoogleMaps: "ਗੂਗਲ ਮੈਪਸ ਵਿੱਚ ਖੋਲ੍ਹੋ",
+    serviceTimes: "ਸੇਵਾ ਦਾ ਸਮਾਂ",
+    sundayService: "ਐਤਵਾਰ ਦੀ ਸੇਵਾ",
+    eveningPrayer: "ਸ਼ਾਮ ਦੀ ਪ੍ਰਾਰਥਨਾ",
+    connectWithUs: "ਸਾਡੇ ਨਾਲ ਜੁੜੋ",
+    followFacebook: "ਫੇਸਬੁੱਕ 'ਤੇ ਸਾਨੂੰ ਫਾਲੋ ਕਰੋ",
+    scanMobilePortal: "ਸਾਡੇ ਮੋਬਾਈਲ ਪੋਰਟਲ 'ਤੇ ਜਾਣ ਲਈ ਸਕੈਨ ਕਰੋ",
+    shareLocation: "ਲੋਕੇਸ਼ਨ ਸਾਂਝੀ ਕਰੋ",
+    shareApp: "ਐਪ ਸਾਂਝੀ ਕਰੋ"
   }
 };

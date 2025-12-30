@@ -63,5 +63,22 @@ export const ml_translations = {
     bengali: "ബംഗാളി",
     marathi: "മറാത്തി",
     punjabi: "പഞ്ചാബി"
+  },
+  home: {
+    churchName: "ആതുമനേസർ ഇന്ത്യ ചർച്ച്",
+    headquarters: "തഞ്ചാവൂർ ആസ്ഥാനം",
+    searchTitle: "ദൈവവചനം തിരയുക",
+    searchSubtitle: "ബൈബിളിലെ ഏത് വചനവും തൽക്ഷണം കണ്ടെത്തുക",
+    viewFullCalendar: "മുഴുവൻ ബൈബിൾ കലണ്ടർ കാണുക",
+    contactUs: "ഞങ്ങളെ ബന്ധപ്പെടുക",
+    openGoogleMaps: "ഗൂഗിൾ മാപ്സിൽ തുറക്കുക",
+    serviceTimes: "ആരാധന സമയങ്ങൾ",
+    sundayService: "ഞായറാഴ്ച ആരാധന",
+    eveningPrayer: "വൈകുന്നേരത്തെ പ്രാർത്ഥന",
+    connectWithUs: "ഞങ്ങളുമായി ബന്ധപ്പെടുക",
+    followFacebook: "ഫേസ്ബുക്കിൽ ഞങ്ങളെ പിന്തുടരുക",
+    scanMobilePortal: "ഞങ്ങളുടെ മൊബൈൽ പോർട്ടൽ സന്ദർശിക്കാൻ സ്കാൻ ചെയ്യുക",
+    shareLocation: "ലൊക്കേഷൻ പങ്കിടുക",
+    shareApp: "ആപ്പ് പങ്കിടുക"
   }
 };

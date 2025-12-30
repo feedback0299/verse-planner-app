@@ -87,17 +87,17 @@ const BibleSearch = () => {
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-spiritual-blue flex items-center gap-2">
           <Search className="h-6 w-6" />
-          {currentLanguage === 'ta' ? 'பைபிள் தேடல்' : 'Bible Search'}
+          {t('verseDialog.search')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 relative">
-              <Label htmlFor="book">{currentLanguage === 'ta' ? 'புத்தகம்' : 'Bible Book'}</Label>
+              <Label htmlFor="book">{t('verseDialog.book')}</Label>
               <Input
                 id="book"
-                placeholder={currentLanguage === 'ta' ? 'எ.கா., யோவான்' : 'e.g., John'}
+                placeholder={t('verseDialog.bookPlaceholder')}
                 value={query.book}
                 onChange={(e) => handleBookChange(e.target.value)}
                 onFocus={() => query.book && setShowSuggestions(true)}
@@ -107,23 +107,32 @@ const BibleSearch = () => {
               />
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-spiritual-blue/10 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {suggestions.map((s, i) => (
-                    <div
-                      key={i}
-                      className="px-4 py-2 hover:bg-spiritual-blue/5 cursor-pointer text-slate-700 transition-colors"
-                      onClick={() => selectSuggestion(s)}
-                    >
-                      {s} <span className="text-xs text-slate-400 ml-2">({getEnglishBookNames()[getBookNamesByLang(currentLanguage).indexOf(s)]})</span>
-                    </div>
-                  ))}
+                  {suggestions.map((s, i) => {
+                    const localBooks = getBookNamesByLang(currentLanguage);
+                    const englishBooks = getEnglishBookNames();
+                    const bookIdx = localBooks.indexOf(s);
+                    const engName = englishBooks[bookIdx];
+                    
+                    return (
+                      <div
+                        key={i}
+                        className="px-4 py-2 hover:bg-spiritual-blue/5 cursor-pointer text-slate-700 transition-colors"
+                        onClick={() => selectSuggestion(s)}
+                      >
+                        {s} {engName && engName.toLowerCase() !== s.toLowerCase() && (
+                          <span className="text-xs text-slate-400 ml-2">({engName})</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="verse">{currentLanguage === 'ta' ? 'வசனம்' : 'Verse Reference'}</Label>
+              <Label htmlFor="verse">{t('verseDialog.verse')}</Label>
               <Input
                 id="verse"
-                placeholder={currentLanguage === 'ta' ? 'எ.கா., 3:16' : 'e.g., 3:16'}
+                placeholder={t('verseDialog.versePlaceholder')}
                 value={query.verse}
                 onChange={(e) => setQuery({ ...query, verse: e.target.value })}
                  className="border-spiritual-blue/20"
@@ -132,7 +141,7 @@ const BibleSearch = () => {
           </div>
           <Button type="submit" disabled={searching} className="w-full bg-spiritual-blue hover:bg-spiritual-blue/90">
             {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-            {currentLanguage === 'ta' ? 'தேடு' : 'Search Verse'}
+            {t('verseDialog.search')}
           </Button>
         </form>
 
