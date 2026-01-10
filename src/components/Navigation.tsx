@@ -9,6 +9,8 @@ const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { currentLanguage, setLanguage, t } = useLanguage();
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isPublisherLoggedIn, setIsPublisherLoggedIn] = useState(false);
 
   const languages = [
     { code: 'ta', label: '🇮🇳 TAMIL தமிழ்' },
@@ -21,20 +23,32 @@ const Navigation = () => {
   ];
 
   useEffect(() => {
+    const checkAuth = () => {
+      setIsAdminLoggedIn(!!localStorage.getItem('admin_session'));
+      setIsPublisherLoggedIn(!!localStorage.getItem('magazine_admin_session'));
+    };
+    checkAuth();
+    const interval = setInterval(checkAuth, 1000);
+    window.addEventListener('storage', checkAuth);
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const navLinks = [
-    { name: t('navigation.home'), path: '/', icon: Home },
-    { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen },
-    { name: t('navigation.calendar'), path: '/calendar', icon: Calendar },
-    { name: t('navigation.publisher'), path: '/admin', icon: Lock },
-    { name: t('navigation.admin'), path: '/events-admin', icon: Lock },
-  ];
+    { name: t('navigation.home'), path: '/', icon: Home, visible: true },
+    { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen, visible: true },
+    { name: t('navigation.calendar'), path: '/calendar', icon: Calendar, visible: true },
+    { name: t('navigation.publisher'), path: '/magazine-admin', icon: Lock, visible: isPublisherLoggedIn },
+    { name: t('navigation.admin'), path: '/admin', icon: Lock, visible: isAdminLoggedIn },
+  ].filter(link => link.visible);
 
   return (
     <>

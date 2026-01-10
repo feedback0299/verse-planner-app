@@ -1,0 +1,236 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { supabase } from '@/lib/dbService/supabase';
+import { useToast } from "@/hooks/use-toast";
+
+export interface Participant {
+  id: string;
+  name: string;
+  isAdmin: boolean;
+  stream: MediaStream | null;
+  isMuted: boolean;
+  isVideoOff: boolean;
+  connectionState?: RTCPeerConnectionState;
+}
+
+export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localStream: MediaStream | null) => {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map());
+  const channelRef = useRef<any>(null);
+  const myIdRef = useRef<string>(Math.random().toString(36).substring(2, 11));
+  const { toast } = useToast();
+
+  const createPeer = useCallback((targetId: string, stream: MediaStream, initiator: boolean) => {
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
+
+    // Add local tracks to peer
+    stream.getTracks().forEach(track => peer.addTrack(track, stream));
+
+    peer.onicecandidate = (event) => {
+      if (event.candidate && channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: { targetId, senderId: myIdRef.current, candidate: event.candidate }
+        });
+      }
+    };
+
+    peer.ontrack = (event) => {
+      const remoteStream = event.streams[0];
+      setParticipants(prev => prev.map(p => 
+        p.id === targetId ? { ...p, stream: remoteStream } : p
+      ));
+    };
+
+    peer.onconnectionstatechange = () => {
+      setParticipants(prev => prev.map(p => 
+        p.id === targetId ? { ...p, connectionState: peer.connectionState } : p
+      ));
+    };
+
+    return peer;
+  }, []);
+
+  useEffect(() => {
+    if (!localStream || !roomId) return;
+
+    const channel = supabase.channel(`room_${roomId}`, {
+      config: { broadcast: { self: false, ack: true } }
+    });
+
+    const sendIdentity = () => {
+      channel.send({
+        type: 'broadcast',
+        event: 'participant-info',
+        payload: { id: myIdRef.current, name, isAdmin }
+      });
+    };
+
+    channel
+      .on('broadcast', { event: 'join' }, async ({ payload }) => {
+        // Redundantly broadcast our info to the new joiner
+        sendIdentity();
+        
+        // Start negotiation if we are the older peer (lexicographical check for determinism)
+        if (myIdRef.current > payload.id) {
+          const peer = createPeer(payload.id, localStream, true);
+          peersRef.current.set(payload.id, peer);
+          
+          try {
+            const offer = await peer.createOffer();
+            await peer.setLocalDescription(offer);
+            channel.send({
+              type: 'broadcast',
+              event: 'offer',
+              payload: { targetId: payload.id, senderId: myIdRef.current, offer, name, isAdmin }
+            });
+          } catch (err) {
+            console.error("Failure creating offer:", err);
+          }
+        }
+      })
+      .on('broadcast', { event: 'participant-info' }, ({ payload }) => {
+        setParticipants(prev => {
+          if (prev.find(p => p.id === payload.id)) return prev;
+          return [...prev, { ...payload, stream: null, isMuted: false, isVideoOff: false }];
+        });
+      })
+      .on('broadcast', { event: 'leave' }, ({ payload }) => {
+        setParticipants(prev => prev.filter(p => p.id !== payload.id));
+        const peer = peersRef.current.get(payload.id);
+        if (peer) {
+          peer.close();
+          peersRef.current.delete(payload.id);
+          pendingCandidatesRef.current.delete(payload.id);
+        }
+      })
+      .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+        if (payload.targetId !== myIdRef.current) return;
+        
+        setParticipants(prev => {
+          if (prev.find(p => p.id === payload.senderId)) return prev;
+          return [...prev, { id: payload.senderId, name: payload.name, isAdmin: payload.isAdmin, stream: null, isMuted: false, isVideoOff: false }];
+        });
+
+        let peer = peersRef.current.get(payload.senderId);
+        if (!peer) {
+          peer = createPeer(payload.senderId, localStream, false);
+          peersRef.current.set(payload.senderId, peer);
+        }
+
+        try {
+          await peer.setRemoteDescription(new RTCSessionDescription(payload.offer));
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          
+          channel.send({
+            type: 'broadcast',
+            event: 'answer',
+            payload: { targetId: payload.senderId, senderId: myIdRef.current, answer }
+          });
+
+          // Flush pending candidates
+          const pending = pendingCandidatesRef.current.get(payload.senderId) || [];
+          for (const cand of pending) {
+            await peer.addIceCandidate(new RTCIceCandidate(cand));
+          }
+          pendingCandidatesRef.current.delete(payload.senderId);
+        } catch (err) {
+          console.error("Error handling offer:", err);
+        }
+      })
+      .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+        if (payload.targetId !== myIdRef.current) return;
+        const peer = peersRef.current.get(payload.senderId);
+        if (peer) {
+          try {
+            await peer.setRemoteDescription(new RTCSessionDescription(payload.answer));
+            
+            // Flush pending candidates
+            const pending = pendingCandidatesRef.current.get(payload.senderId) || [];
+            for (const cand of pending) {
+              await peer.addIceCandidate(new RTCIceCandidate(cand));
+            }
+            pendingCandidatesRef.current.delete(payload.senderId);
+          } catch (err) {
+            console.error("Error setting remote description from answer:", err);
+          }
+        }
+      })
+      .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+        if (payload.targetId !== myIdRef.current) return;
+        const peer = peersRef.current.get(payload.senderId);
+        
+        if (peer && peer.remoteDescription) {
+          try {
+            await peer.addIceCandidate(new RTCIceCandidate(payload.candidate));
+          } catch (err) {
+            console.error("Error adding ice candidate:", err);
+          }
+        } else {
+          const pending = pendingCandidatesRef.current.get(payload.senderId) || [];
+          pendingCandidatesRef.current.set(payload.senderId, [...pending, payload.candidate]);
+        }
+      })
+      .on('broadcast', { event: 'command' }, ({ payload }) => {
+         if (payload.targetId === myIdRef.current || payload.targetId === 'all') {
+            handleAdminCommand(payload.action);
+         }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'join',
+            payload: { id: myIdRef.current, name, isAdmin }
+          });
+        }
+      });
+
+    // Redundancy interval: catch users who missed the 'join' event
+    const infoInterval = setInterval(sendIdentity, 5000);
+
+    const handleAdminCommand = (action: string) => {
+      if (action === 'MUTE') {
+        localStream.getAudioTracks().forEach(t => t.enabled = false);
+        toast({ title: "Muted by Admin", description: "Your microphone has been disabled." });
+      } else if (action === 'STOP_VIDEO') {
+        localStream.getVideoTracks().forEach(t => t.enabled = false);
+        toast({ title: "Video Stopped by Admin", description: "Your camera has been disabled." });
+      } else if (action === 'KICK') {
+        localStream.getTracks().forEach(t => t.stop());
+        window.location.href = '/';
+      }
+    };
+
+    channelRef.current = channel;
+
+    return () => {
+      clearInterval(infoInterval);
+      channel.send({
+        type: 'broadcast',
+        event: 'leave',
+        payload: { id: myIdRef.current }
+      });
+      channel.unsubscribe();
+      peersRef.current.forEach(peer => peer.close());
+    };
+  }, [roomId, localStream, name, isAdmin, createPeer]);
+
+  const sendCommand = (targetId: string | 'all', action: string) => {
+    if (!isAdmin) return;
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'command',
+      payload: { targetId, action }
+    });
+  };
+
+  return { participants, sendCommand, myId: myIdRef.current };
+};
