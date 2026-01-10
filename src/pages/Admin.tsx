@@ -5,30 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, LogOut, UserPlus, Users } from 'lucide-react';
+import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from 'react-router-dom';
+import AdminAuthWrapper from '@/components/AdminAuthWrapper';
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
-  const [session, setSession] = useState<any>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { toast } = useToast();
-  
-  // Event Form State
   const [events, setEvents] = useState<any[]>([]);
   const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', description: '' });
-
-  useEffect(() => {
-    // Check local session key
-    const adminSession = localStorage.getItem('admin_session');
-    if (adminSession) {
-      setSession(JSON.parse(adminSession));
-      fetchEvents();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const loginLogic = async (email: string, pass: string) => {
+    if (email === 'admin' && pass === 'admin') {
+      return { 
+        success: true, 
+        session: { user: { email: 'admin', name: 'Church Admin' } },
+        message: "Welcome Admin"
+      };
     }
-  }, []);
+    return { success: false };
+  };
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -40,43 +40,9 @@ const Admin = () => {
     else setEvents(data || []);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // 1. Query the admin_data table
-    const { data, error } = await supabase
-      .from('admin_data')
-      .select('*')
-      .eq('email', email)
-      .eq('password', password) // In production, verify hash!
-      .single();
-
-    if (error || !data) {
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid credentials.",
-      });
-    } else {
-      // 2. Set Custom Session
-      const newSession = { user: { email: data.email, name: data.name, role: 'admin', id: data.id } };
-      setSession(newSession);
-      localStorage.setItem('admin_session', JSON.stringify(newSession));
-      
-      toast({
-        title: "Welcome Back",
-        description: `Logged in as ${data.name}`,
-      });
-      fetchEvents();
-    }
-    setLoading(false);
-  };
-
-  const handleLogout = async () => {
-    setSession(null);
-    localStorage.removeItem('admin_session');
-  };
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,63 +78,27 @@ const Admin = () => {
       }
   };
 
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-spiritual-blue">Admin Login</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                 <Label htmlFor="email">Email</Label>
-                 <Input 
-                    id="email" 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@athumanesar.com" 
-                    required
-                 />
-              </div>
-              <div className="space-y-2">
-                 <Label htmlFor="password">Password</Label>
-                 <Input 
-                    id="password" 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)} 
-                    required
-                 />
-              </div>
-              <Button type="submit" className="w-full bg-spiritual-blue hover:bg-blue-700" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 px-4 pb-12">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <AdminAuthWrapper
+      title="Church Administration"
+      subtitle="Events & Daily Verse Management"
+      sessionKey="admin_session"
+      loginLogic={loginLogic}
+    >
+      <div className="p-10 max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-spiritual-blue">Admin Dashboard</h1>
-          <Button variant="outline" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4" /> Sign Out</Button>
+          <h1 className="text-3xl font-bold text-spiritual-blue uppercase">Control Center</h1>
         </div>
 
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="events">Church Events</TabsTrigger>
             <TabsTrigger value="verses">Daily Verses</TabsTrigger>
+            <TabsTrigger value="meetings">Meetings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="events" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-                {/* Create Event Form */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Add New Event</CardTitle>
@@ -204,7 +134,6 @@ const Admin = () => {
                     </CardContent>
                 </Card>
 
-                {/* Event List */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Existing Events</CardTitle>
@@ -237,9 +166,50 @@ const Admin = () => {
                 <MonthlyPlanner />
             </div>
           </TabsContent>
+
+          <TabsContent value="meetings">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Video className="text-blue-500" />
+                        Video Meetings
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="p-6 border-2 border-dashed rounded-xl bg-slate-50 flex flex-col items-center gap-4">
+                        <div className="text-center">
+                            <h3 className="font-bold text-lg">Start a New Meeting</h3>
+                            <p className="text-sm text-slate-500">Generate a new meeting room and join immediately.</p>
+                        </div>
+                        <div className="flex gap-2 w-full max-w-sm">
+                            <Input placeholder="Room Name (Optional)" id="new-room-name-admin" />
+                            <Button onClick={() => {
+                                const id = Math.random().toString(36).substring(2, 9);
+                                navigate(`/room/${id}`);
+                            }}>
+                                <Plus className="h-4 w-4 mr-2" /> Create
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="p-6 border rounded-xl bg-spiritual-blue/5">
+                        <h3 className="font-bold mb-4">Join Existing Room</h3>
+                        <div className="flex gap-2">
+                            <Input placeholder="Enter Room ID" id="join-room-id-admin" />
+                            <Button variant="outline" onClick={() => {
+                                const id = (document.getElementById('join-room-id-admin') as HTMLInputElement).value;
+                                if (id) navigate(`/room/${id}`);
+                            }}>
+                                <ExternalLink className="h-4 w-4 mr-2" /> Join
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AdminAuthWrapper>
   );
 };
 

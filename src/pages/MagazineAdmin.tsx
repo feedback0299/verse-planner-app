@@ -4,21 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, Calendar, Star, Target } from 'lucide-react';
+import { Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, Calendar, Star, Target, Video, Plus, ExternalLink } from 'lucide-react';
 import { uploadMagazinePDF, getMagazineUrl } from '@/lib/commonService/magazineService';
 import { Document, Page, pdfjs } from 'react-pdf';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import PeriodicVerseUploader from '@/components/PeriodicVerseUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from 'react-router-dom';
+import AdminAuthWrapper from '@/components/AdminAuthWrapper';
 
 // Setup pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const MagazineAdmin = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -27,17 +26,16 @@ const MagazineAdmin = () => {
   
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const loginLogic = async (email: string, pass: string) => {
     // Special Auth for Magazine Admin
-    if (email === 'editor' && password === 'publish') {
-      setIsAuthenticated(true);
-      toast({ title: "Welcome Editor", description: "You have access to magazine publishing." });
-    } else {
-      toast({ variant: "destructive", title: "Access Denied", description: "Invalid credentials." });
+    if (email === 'editor' && pass === 'publish') {
+      return { 
+        success: true, 
+        session: { user: { email: 'editor', name: 'Magazine Editor' } },
+        message: "Welcome Editor"
+      };
     }
-    setLoading(false);
+    return { success: false };
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,63 +72,23 @@ const MagazineAdmin = () => {
     setNumPages(numPages);
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md border-slate-800 bg-slate-950 text-slate-50">
-          <CardHeader className="text-center">
-            <div className="mx-auto bg-slate-800 p-3 rounded-full w-fit mb-4">
-              <Lock className="h-8 w-8 text-slate-400" />
-            </div>
-            <CardTitle className="text-2xl text-slate-200">Admin Publisher</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                 <Label htmlFor="email">Editor ID</Label>
-                 <Input 
-                    id="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-slate-900 border-slate-700 text-white"
-                    placeholder="ID" 
-                 />
-              </div>
-              <div className="space-y-2">
-                 <Label htmlFor="password">Passkey</Label>
-                 <Input 
-                    id="password" 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)} 
-                    className="bg-slate-900 border-slate-700 text-white"
-                 />
-              </div>
-              <button type="submit" className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md transition-colors" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> : 'Enter Studio'}
-              </button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 px-4 pb-12">
-      <div className="max-w-7xl mx-auto">
+    <AdminAuthWrapper 
+      title="Magazine Publisher" 
+      subtitle="Authorized Studio Access" 
+      sessionKey="magazine_admin_session"
+      loginLogic={loginLogic}
+    >
+      <div className="p-10 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-gray-500">Manage magazine, verses, and Bible planner.</p>
+                <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Studio Dashboard</h1>
+                <p className="text-gray-500 font-medium">Manage church publications and literature.</p>
             </div>
-            <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
-                <LogOut className="mr-2 h-4 w-4"/> Exit
-            </Button>
         </div>
 
         <Tabs defaultValue="magazine" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-8 bg-white border">
+            <TabsList className="grid w-full grid-cols-5 mb-8 bg-white border h-14 rounded-2xl p-1">
                 <TabsTrigger value="magazine" className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" /> Magazine
                 </TabsTrigger>
@@ -142,6 +100,9 @@ const MagazineAdmin = () => {
                 </TabsTrigger>
                 <TabsTrigger value="annual_verse" className="flex items-center gap-2">
                     <Target className="h-4 w-4" /> Annual Verse
+                </TabsTrigger>
+                <TabsTrigger value="meetings" className="flex items-center gap-2">
+                    <Video className="h-4 w-4" /> Meetings
                 </TabsTrigger>
             </TabsList>
 
@@ -274,9 +235,53 @@ const MagazineAdmin = () => {
                     <PeriodicVerseUploader type="annual" />
                 </div>
             </TabsContent>
+
+            <TabsContent value="meetings">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Video className="h-5 w-5 text-blue-600" />
+                            Meeting Rooms
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <Label>Create New Room</Label>
+                                <div className="flex gap-2">
+                                    <Input placeholder="Room Name (e.g. Sunday Service)" id="new-room-name" />
+                                    <Button onClick={() => {
+                                        const name = (document.getElementById('new-room-name') as HTMLInputElement).value;
+                                        if (name) {
+                                            const id = Math.random().toString(36).substring(2, 9);
+                                            navigate(`/room/${id}`);
+                                        }
+                                    }}>
+                                        <Plus className="h-4 w-4 mr-2" /> Create
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-gray-500">Rooms are available 24/7. Share the link with participants once you join.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label>Join Existing Room</Label>
+                                <div className="flex gap-2">
+                                    <Input placeholder="Enter Room ID" id="join-room-id" />
+                                    <Button variant="outline" onClick={() => {
+                                        const id = (document.getElementById('join-room-id') as HTMLInputElement).value;
+                                        if (id) navigate(`/room/${id}`);
+                                    }}>
+                                        <ExternalLink className="h-4 w-4 mr-2" /> Join
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AdminAuthWrapper>
   );
 };
 
