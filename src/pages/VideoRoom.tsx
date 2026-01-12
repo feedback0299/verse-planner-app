@@ -34,7 +34,7 @@ const VideoRoom = () => {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isRetryingMedia, setIsRetryingMedia] = useState(false);
 
-  const { participants, sendCommand, myId, signalingError } = useWebRTC(roomId || '', name, isAdmin, localStream, hasJoined);
+  const { participants, sendCommand, updateMediaState, myId, signalingError } = useWebRTC(roomId || '', name, isAdmin, localStream, hasJoined);
   
   useEffect(() => {
     if (signalingError) setComponentError(signalingError);
@@ -110,6 +110,7 @@ const VideoRoom = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach(t => t.enabled = isLocalMuted);
       setIsLocalMuted(!isLocalMuted);
+      updateMediaState(!isLocalMuted, isLocalVideoOff);
     }
   };
 
@@ -117,6 +118,7 @@ const VideoRoom = () => {
     if (localStream) {
       localStream.getVideoTracks().forEach(t => t.enabled = isLocalVideoOff);
       setIsLocalVideoOff(!isLocalVideoOff);
+      updateMediaState(isLocalMuted, !isLocalVideoOff);
     }
   };
 
@@ -127,12 +129,7 @@ const VideoRoom = () => {
     navigate(isAdmin ? '/magazine-admin' : '/');
   };
 
-  // Filter participants based on role requirements
-  const visibleParticipants = (participants || []).filter(p => {
-    if (!p) return false;
-    if (isAdmin) return true; // Admin sees everyone
-    return p.isAdmin; // Non-admin ONLY sees Admins
-  });
+  // No longer filtering visible participants, instead we control track attachment in ParticipantTile
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-900"><Loader2 className="h-12 w-12 text-blue-500 animate-spin" /></div>;
@@ -254,18 +251,18 @@ const VideoRoom = () => {
         .mirror { transform: scaleX(-1); }
       `}</style>
       {/* Header - Styled specifically for Admin/User needs */}
-      <div className={`h-16 border-b border-white/5 flex items-center justify-between px-6 bg-slate-900/40 backdrop-blur-xl z-20 ${isAdmin ? '' : 'fixed top-0 left-0 right-0'}`}>
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-blue-600/20 rounded-lg"><Video className="h-5 w-5 text-blue-400" /></div>
-          <div>
-            <h2 className="font-bold text-slate-100 leading-tight">Athumanesar India</h2>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Room: {roomId}</p>
+      <div className={`h-14 sm:h-16 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 bg-slate-900/40 backdrop-blur-xl z-20 ${isAdmin ? '' : 'fixed top-0 left-0 right-0'}`}>
+        <div className="flex items-center gap-2 sm:gap-4 truncate mr-2">
+          <div className="p-1.5 sm:p-2 bg-blue-600/20 rounded-lg shrink-0"><Video className="h-4 w-4 sm:h-5 sm:h-5 text-blue-400" /></div>
+          <div className="min-w-0">
+            <h2 className="font-bold text-slate-100 leading-tight text-sm sm:text-base truncate">Athumanesar India</h2>
+            <p className="text-[8px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold truncate">Room: {roomId}</p>
           </div>
-          {isAdmin && <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black border border-amber-500/20 flex items-center gap-1 ml-2"><Crown className="h-3 w-3" /> ADMIN</span>}
+          {isAdmin && <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[8px] sm:text-[10px] font-black border border-amber-500/20 flex items-center gap-1 shrink-0"><Crown className="h-2.5 w-2.5" /> ADMIN</span>}
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
            {isAdmin && (
-             <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-slate-800/50 rounded-full border border-white/5">
+             <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-full border border-white/5">
                 <Users className="h-4 w-4 text-blue-400" />
                 <span className="text-xs font-bold text-slate-300">{participants.length + 1}</span>
              </div>
@@ -278,12 +275,12 @@ const VideoRoom = () => {
                navigator.clipboard.writeText(url);
                toast({ title: "Invite Link Copied", description: "Share this link with participants." });
              }} 
-             className="rounded-full px-5 bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-bold hidden sm:flex"
+             className="rounded-full px-3 sm:px-5 h-8 sm:h-9 bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-bold text-xs"
            >
-             <Share2 className="h-4 w-4 mr-2" /> Invite
+             <Share2 className="h-3.5 w-3.5 sm:mr-2" /> <span className="hidden sm:inline">Invite</span>
            </Button>
-           <Button variant="destructive" size="sm" onClick={leaveRoom} className="rounded-full px-5 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold">
-             <LogOut className="h-4 w-4 mr-2" /> Leave
+           <Button variant="destructive" size="sm" onClick={leaveRoom} className="rounded-full px-3 sm:px-5 h-8 sm:h-9 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold text-xs">
+             <LogOut className="h-3.5 w-3.5 sm:mr-2" /> <span className="hidden sm:inline">Leave</span>
            </Button>
         </div>
       </div>
@@ -292,40 +289,83 @@ const VideoRoom = () => {
         {/* Main Video Area */}
         <div className="flex-1 p-6 overflow-y-auto scrollbar-hide">
           <div className="max-w-7xl mx-auto pb-24">
-            <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'} auto-rows-[300px]`}>
-              {/* Local Stream */}
-              <ParticipantTile 
-                stream={localStream} 
-                name={name} 
-                isAdmin={isAdmin} 
-                isLocal={true} 
-                isMuted={isLocalMuted} 
-                isVideoOff={isLocalVideoOff}
-              />
+            {/* Theater Mode for Guests / Grid for Admin */}
+            <div className="flex flex-col gap-6">
+              {isAdmin ? (
+                /* Admin Grid View: See everyone equally */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[300px]">
+                  <ParticipantTile 
+                    stream={localStream} 
+                    name={name} 
+                    isAdmin={isAdmin} 
+                    isLocal={true} 
+                    isMuted={isLocalMuted} 
+                    isVideoOff={isLocalVideoOff}
+                  />
+                  {participants.map(p => (
+                    <ParticipantTile 
+                      key={p.id}
+                      participant={p}
+                      isAdminViewer={isAdmin}
+                      isGuestViewer={!isAdmin}
+                      onMute={() => sendCommand(p.id, p.isMuted ? 'UNMUTE' : 'MUTE')}
+                      onKick={() => sendCommand(p.id, 'KICK')}
+                      onStopVideo={() => sendCommand(p.id, p.isVideoOff ? 'START_VIDEO' : 'STOP_VIDEO')}
+                      connectionState={p.connectionState}
+                    />
+                  ))}
+                </div>
+              ) : (
+                /* Guest Theater Mode: Feature the Admin */
+                <>
+                  {/* Featured Admin Slot */}
+                  {participants.filter(p => p.isAdmin).map(p => (
+                    <div key={p.id} className="w-full max-w-5xl mx-auto aspect-video mb-4">
+                      <ParticipantTile 
+                        participant={p}
+                        isGuestViewer={true}
+                        connectionState={p.connectionState}
+                        featured={true}
+                      />
+                    </div>
+                  ))}
 
-              {/* Remote Streams */}
-              {visibleParticipants.map(p => (
-                <ParticipantTile 
-                  key={p.id}
-                  participant={p}
-                  isAdminControl={isAdmin}
-                  onMute={() => sendCommand(p.id, 'MUTE')}
-                  onKick={() => sendCommand(p.id, 'KICK')}
-                  onStopVideo={() => sendCommand(p.id, 'STOP_VIDEO')}
-                  connectionState={p.connectionState}
-                />
-              ))}
+                  {/* Sidebar/Bottom Gallery: Myself and other Participants */}
+                  <div className="flex overflow-x-auto gap-4 mt-4 pb-4 snap-x scrollbar-hide justify-start sm:justify-center">
+                    <div className="w-48 sm:w-64 aspect-video shrink-0 snap-center">
+                      <ParticipantTile 
+                        stream={localStream} 
+                        name={name} 
+                        isAdmin={isAdmin} 
+                        isLocal={true} 
+                        isMuted={isLocalMuted} 
+                        isVideoOff={isLocalVideoOff}
+                      />
+                    </div>
+                    {participants.filter(p => !p.isAdmin).map(p => (
+                      <div key={p.id} className="w-48 sm:w-64 aspect-video shrink-0 snap-center">
+                        <ParticipantTile 
+                          participant={p}
+                          isGuestViewer={true}
+                          connectionState={p.connectionState}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Empty State: If no Admin is present */}
+                  {!participants.some(p => p.isAdmin) && (
+                    <div className="h-[400px] flex flex-col items-center justify-center text-slate-500 space-y-4">
+                       <div className="p-4 bg-slate-900 rounded-full animate-pulse">
+                          <Video className="h-8 w-8" />
+                       </div>
+                       <p className="text-lg font-medium">Waiting for Admin to join...</p>
+                       <p className="text-sm text-slate-600">The session will start as soon as the administrator arrives.</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-
-            {!isAdmin && !visibleParticipants.some(p => p.isAdmin) && (
-              <div className="h-[400px] flex flex-col items-center justify-center text-slate-500 space-y-4">
-                 <div className="p-4 bg-slate-900 rounded-full animate-pulse">
-                    <Video className="h-8 w-8" />
-                 </div>
-                 <p className="text-lg font-medium">Waiting for Admin to start the session...</p>
-                 <p className="text-sm text-slate-600">The video will appear here automatically when the admin joins.</p>
-              </div>
-            )}
           </div>
         </div>
 
@@ -368,8 +408,22 @@ const VideoRoom = () => {
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    {p.isMuted && <MicOff className="h-3 w-3 text-red-400" />}
-                    {p.isVideoOff && <VideoOff className="h-3 w-3 text-slate-500" />}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-8 w-8 rounded-lg ${p.isMuted ? 'text-red-500 bg-red-500/10' : 'text-slate-400'}`}
+                      onClick={() => sendCommand(p.id, p.isMuted ? 'UNMUTE' : 'MUTE')}
+                    >
+                      {p.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-8 w-8 rounded-lg ${p.isVideoOff ? 'text-blue-500 bg-blue-500/10' : 'text-slate-400'}`}
+                      onClick={() => sendCommand(p.id, p.isVideoOff ? 'START_VIDEO' : 'STOP_VIDEO')}
+                    >
+                      {p.isVideoOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -379,8 +433,8 @@ const VideoRoom = () => {
       </div>
 
       {/* Control Bar */}
-      <div className={`h-24 bg-slate-900/80 backdrop-blur-2xl border-t border-white/5 flex items-center justify-center gap-8 px-6 z-20 ${isAdmin ? 'pr-80' : ''}`}>
-        <div className="flex items-center gap-4">
+      <div className={`h-20 sm:h-24 bg-slate-900/80 backdrop-blur-2xl border-t border-white/5 flex items-center justify-center gap-4 sm:gap-8 px-4 sm:px-6 z-20 ${isAdmin ? 'pr-0 sm:pr-80' : ''}`}>
+        <div className="flex items-center gap-2 sm:gap-4">
           <ControlButton 
             active={!isLocalMuted} 
             icon={isLocalMuted ? <MicOff /> : <Mic />} 
@@ -394,17 +448,33 @@ const VideoRoom = () => {
         </div>
 
         {isAdmin && (
-          <div className="h-10 w-[1px] bg-slate-800 mx-2" />
+          <div className="h-8 w-[1px] bg-slate-800 mx-1 sm:mx-2 hidden xs:block" />
         )}
 
         {isAdmin && (
-          <Button 
-            variant="outline" 
-            className="rounded-full px-6 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-bold h-14"
-            onClick={() => sendCommand('all', 'MUTE')}
-          >
-            <VolumeX className="mr-2 h-4 w-4" /> Mute All
-          </Button>
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-full">
+            <Button 
+              variant="outline" 
+              className="rounded-full px-3 sm:px-4 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-bold h-10 sm:h-12 text-xs shrink-0"
+              onClick={() => sendCommand('all', 'MUTE')}
+            >
+              <MicOff className="sm:mr-2 h-3.5 w-3.5" /> <span className="hidden sm:inline">Mute All</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="rounded-full px-3 sm:px-4 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-bold h-10 sm:h-12 text-xs shrink-0"
+              onClick={() => sendCommand('all', 'UNMUTE')}
+            >
+              <Mic className="sm:mr-2 h-3.5 w-3.5" /> <span className="hidden sm:inline">Unmute All</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="rounded-full px-3 sm:px-4 border-slate-500/30 text-slate-400 hover:bg-slate-500/10 font-bold h-10 sm:h-12 text-xs shrink-0"
+              onClick={() => sendCommand('all', 'STOP_VIDEO')}
+            >
+              <VideoOff className="sm:mr-2 h-3.5 w-3.5" /> <span className="hidden sm:inline">Stop All</span>
+            </Button>
+          </div>
         )}
       </div>
     </div>
@@ -432,33 +502,49 @@ const LocalVideoView = ({ stream }: { stream: MediaStream }) => {
 
 const ParticipantTile = ({ 
   stream, participant, name, isAdmin, isLocal, isMuted, isVideoOff,
-  isAdminControl, onMute, onKick, onStopVideo 
+  isAdminViewer, isGuestViewer, onMute, onKick, onStopVideo, featured = false
 }: any) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const displayName = isLocal ? name : participant?.name;
   const displayAdmin = isLocal ? isAdmin : participant?.isAdmin;
   const mutedStatus = isLocal ? isMuted : participant?.isMuted;
   const videoOffStatus = isLocal ? isVideoOff : participant?.isVideoOff;
+  
+  // Logic: Guest viewer ONLY sees/hears Admins.
+  const shouldAttachMedia = isLocal || isAdminViewer || (isGuestViewer && participant?.isAdmin);
 
   useEffect(() => {
     if (videoRef.current) {
       const activeStream = isLocal ? stream : participant?.stream;
-      if (videoRef.current.srcObject !== activeStream) {
-        videoRef.current.srcObject = activeStream || null;
+      if (shouldAttachMedia && activeStream) {
+        if (videoRef.current.srcObject !== activeStream) {
+          videoRef.current.srcObject = activeStream;
+        }
+      } else {
+        videoRef.current.srcObject = null;
       }
     }
-  }, [stream, participant?.stream, isLocal]);
+  }, [stream, participant?.stream, isLocal, shouldAttachMedia]);
 
   return (
-    <div className="group relative rounded-3xl overflow-hidden bg-slate-900/80 border border-white/10 shadow-2xl transition-all hover:border-blue-500/30">
+    <div className={`group relative rounded-3xl overflow-hidden bg-slate-900/80 border border-white/10 shadow-2xl transition-all hover:border-blue-500/30 w-full h-full ${featured ? 'ring-2 ring-blue-500/20' : ''}`}>
         <video 
           autoPlay 
-          muted={isLocal} 
+          muted={isLocal || (isGuestViewer && participant?.isAdmin === false)} 
           playsInline 
           ref={videoRef} 
-          className={`w-full h-full object-cover transition-transform group-hover:scale-105 duration-700 ${isLocal ? 'mirror' : ''}`}
+          className={`w-full h-full object-cover transition-transform group-hover:scale-105 duration-700 ${isLocal ? 'mirror' : ''} ${!shouldAttachMedia ? 'opacity-0' : ''}`}
         />
         
+        {!shouldAttachMedia && !isLocal && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 p-4 text-center">
+            <div className={`${featured ? 'h-32 w-32 text-5xl' : 'h-16 w-16 text-2xl'} rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-500 mb-4 border border-white/5`}>
+              {displayName?.charAt(0).toUpperCase()}
+            </div>
+            <p className="text-slate-500 font-bold text-xs tracking-widest uppercase">Participant</p>
+          </div>
+        )}
+
         {/* Name Label */}
         <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/5 shadow-xl">
            <span className="text-sm font-bold text-slate-100">{displayName}</span>
@@ -477,13 +563,13 @@ const ParticipantTile = ({
         </div>
 
         {/* Admin Controls on Tile */}
-        {isAdminControl && !isLocal && (
+        {isAdminViewer && !isLocal && (
           <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-             <Button variant="secondary" size="icon" className="rounded-full bg-white text-slate-900 hover:bg-slate-200 shadow-xl" onClick={onMute} title="Mute Participant">
-                <MicOff className="h-5 w-5" />
+             <Button variant="secondary" size="icon" className={`rounded-full shadow-xl ${mutedStatus ? 'bg-red-500 text-white' : 'bg-white text-slate-900 hover:bg-slate-200'}`} onClick={onMute} title={mutedStatus ? "Unmute" : "Mute"}>
+                {mutedStatus ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
              </Button>
-             <Button variant="secondary" size="icon" className="rounded-full bg-white text-slate-900 hover:bg-slate-200 shadow-xl" onClick={onStopVideo} title="Stop Participant Video">
-                <VideoOff className="h-5 w-5" />
+             <Button variant="secondary" size="icon" className={`rounded-full shadow-xl ${videoOffStatus ? 'bg-blue-500 text-white' : 'bg-white text-slate-900 hover:bg-slate-200'}`} onClick={onStopVideo} title={videoOffStatus ? "Start Video" : "Stop Video"}>
+                {videoOffStatus ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
              </Button>
              <Button variant="destructive" size="icon" className="rounded-full shadow-xl" onClick={onKick} title="Kick from Room">
                 <XCircle className="h-5 w-5" />
