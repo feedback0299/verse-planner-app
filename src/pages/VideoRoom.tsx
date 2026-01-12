@@ -21,6 +21,12 @@ const VideoRoom = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [componentError, setComponentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.RTCPeerConnection) {
+      setComponentError("Your browser does not support WebRTC which is required for video calls. Please use a modern browser like Chrome or Safari.");
+    }
+  }, []);
   
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isLocalMuted, setIsLocalMuted] = useState(false);
@@ -28,7 +34,11 @@ const VideoRoom = () => {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isRetryingMedia, setIsRetryingMedia] = useState(false);
 
-  const { participants, sendCommand, myId } = useWebRTC(roomId || '', name, isAdmin, localStream);
+  const { participants, sendCommand, myId, signalingError } = useWebRTC(roomId || '', name, isAdmin, localStream);
+  
+  useEffect(() => {
+    if (signalingError) setComponentError(signalingError);
+  }, [signalingError]);
   
   useEffect(() => {
     checkAdminStatus();
@@ -219,6 +229,21 @@ const VideoRoom = () => {
             </form>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+  if (componentError) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center text-white">
+        <div className="p-6 bg-red-500/10 rounded-full border border-red-500/20 mb-6">
+          <XCircle className="h-12 w-12 text-red-500" />
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Technical Error</h1>
+        <p className="text-white mb-2 font-mono text-xs p-3 bg-red-900/20 rounded-lg">{componentError}</p>
+        <p className="text-slate-500 mb-8 max-w-sm text-sm">This usually happens on mobile browsers with restricted WebRTC/Supabase permissions. Please refresh or try another browser.</p>
+        <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700 px-8 h-12 rounded-xl font-bold">
+          Reload Session
+        </Button>
       </div>
     );
   }
@@ -419,7 +444,7 @@ const ParticipantTile = ({
           muted={isLocal} 
           playsInline 
           ref={videoRef} 
-          className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700 mirror"
+          className={`w-full h-full object-cover transition-transform group-hover:scale-105 duration-700 ${isLocal ? 'mirror' : ''}`}
         />
         
         {/* Name Label */}

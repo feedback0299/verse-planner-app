@@ -14,6 +14,7 @@ export interface Participant {
 
 export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localStream: MediaStream | null) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [signalingError, setSignalingError] = useState<string | null>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map());
   const channelRef = useRef<any>(null);
@@ -181,7 +182,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
             // Flush pending candidates
             const pending = pendingCandidatesRef.current.get(payload.senderId) || [];
             for (const cand of pending) {
-              await peer.addIceCandidate(new RTCIceCandidate(cand));
+              if (cand) await peer.addIceCandidate(new RTCIceCandidate(cand));
             }
             pendingCandidatesRef.current.delete(payload.senderId);
           } catch (err) {
@@ -209,17 +210,25 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
             handleAdminCommand(payload.action);
          }
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          channel.send({
-            type: 'broadcast',
-            event: 'join',
-            payload: { 
-              id: myIdRef.current, 
-              name: nameRef.current || 'User', 
-              isAdmin: isAdminRef.current 
-            }
-          });
+      .subscribe(async (status) => {
+        try {
+          if (status === 'SUBSCRIBED') {
+            const status = await channel.send({
+              type: 'broadcast',
+              event: 'join',
+              payload: { 
+                id: myIdRef.current, 
+                name: nameRef.current || 'User', 
+                isAdmin: isAdminRef.current 
+              }
+            });
+            if (status !== 'ok') throw new Error(`Join failed with status: ${status}`);
+          } else if (status === 'CHANNEL_ERROR') {
+             setSignalingError("Signaling channel disconnected. Please check your internet.");
+          }
+        } catch (err: any) {
+          console.error("Signaling subscription error:", err);
+          setSignalingError("Failed to connect to signaling server.");
         }
       });
 
@@ -269,5 +278,5 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
     });
   };
 
-  return { participants, sendCommand, myId: myIdRef.current };
+  return { participants, sendCommand, myId: myIdRef.current, signalingError };
 };
