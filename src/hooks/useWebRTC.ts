@@ -74,15 +74,16 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
 
     channel
       .on('broadcast', { event: 'join' }, async ({ payload }) => {
+        if (!payload || !payload.id) return;
         // Redundantly broadcast our info to the new joiner
         sendIdentity();
         
         // Start negotiation if we are the older peer (lexicographical check for determinism)
         if (myIdRef.current > payload.id) {
-          const peer = createPeer(payload.id, localStream || new MediaStream(), true);
-          peersRef.current.set(payload.id, peer);
-          
           try {
+            const peer = createPeer(payload.id, localStream || new MediaStream(), true);
+            peersRef.current.set(payload.id, peer);
+            
             const offer = await peer.createOffer({
               offerToReceiveAudio: true,
               offerToReceiveVideo: true
@@ -94,7 +95,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
               payload: { targetId: payload.id, senderId: myIdRef.current, offer, name, isAdmin }
             });
           } catch (err) {
-            console.error("Failure creating offer:", err);
+            console.error("Failure creating/sending offer:", err);
           }
         }
       })
@@ -114,20 +115,20 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
         }
       })
       .on('broadcast', { event: 'offer' }, async ({ payload }) => {
-        if (payload.targetId !== myIdRef.current) return;
+        if (!payload || payload.targetId !== myIdRef.current) return;
         
         setParticipants(prev => {
           if (prev.find(p => p.id === payload.senderId)) return prev;
-          return [...prev, { id: payload.senderId, name: payload.name, isAdmin: payload.isAdmin, stream: null, isMuted: false, isVideoOff: false }];
+          return [...prev, { id: payload.senderId, name: payload.name || 'User', isAdmin: !!payload.isAdmin, stream: null, isMuted: false, isVideoOff: false }];
         });
 
-        let peer = peersRef.current.get(payload.senderId);
-        if (!peer) {
-          peer = createPeer(payload.senderId, localStream || new MediaStream(), false);
-          peersRef.current.set(payload.senderId, peer);
-        }
-
         try {
+          let peer = peersRef.current.get(payload.senderId);
+          if (!peer) {
+            peer = createPeer(payload.senderId, localStream || new MediaStream(), false);
+            peersRef.current.set(payload.senderId, peer);
+          }
+
           await peer.setRemoteDescription(new RTCSessionDescription(payload.offer));
           const answer = await peer.createAnswer();
           await peer.setLocalDescription(answer);
@@ -141,7 +142,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
           // Flush pending candidates
           const pending = pendingCandidatesRef.current.get(payload.senderId) || [];
           for (const cand of pending) {
-            await peer.addIceCandidate(new RTCIceCandidate(cand));
+            if (cand) await peer.addIceCandidate(new RTCIceCandidate(cand));
           }
           pendingCandidatesRef.current.delete(payload.senderId);
         } catch (err) {
@@ -167,7 +168,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
         }
       })
       .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-        if (payload.targetId !== myIdRef.current) return;
+        if (!payload || !payload.candidate || payload.targetId !== myIdRef.current) return;
         const peer = peersRef.current.get(payload.senderId);
         
         if (peer && peer.remoteDescription) {
