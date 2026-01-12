@@ -33,15 +33,15 @@ const MagazineAdmin = () => {
   const { toast } = useToast();
 
   const loginLogic = async (email: string, pass: string) => {
-    // Special Auth for Magazine Admin
-    if (email === 'editor' && pass === 'publish') {
+    // Special Auth for Magazine Admin - Case-insensitive and trimmed for reliability
+    if (email.trim().toLowerCase() === 'editor' && pass.trim() === 'publish') {
       return { 
         success: true, 
         session: { user: { email: 'editor', name: 'Magazine Editor' } },
         message: "Welcome Editor"
       };
     }
-    return { success: false };
+    return { success: false, message: "Invalid credentials. Please check for spaces or capitalization." };
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
