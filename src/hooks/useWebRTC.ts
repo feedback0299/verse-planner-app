@@ -58,7 +58,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
   }, []);
 
   useEffect(() => {
-    if (!localStream || !roomId) return;
+    if (!roomId) return;
 
     const channel = supabase.channel(`room_${roomId}`, {
       config: { broadcast: { self: false, ack: true } }
@@ -79,11 +79,14 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
         
         // Start negotiation if we are the older peer (lexicographical check for determinism)
         if (myIdRef.current > payload.id) {
-          const peer = createPeer(payload.id, localStream, true);
+          const peer = createPeer(payload.id, localStream || new MediaStream(), true);
           peersRef.current.set(payload.id, peer);
           
           try {
-            const offer = await peer.createOffer();
+            const offer = await peer.createOffer({
+              offerToReceiveAudio: true,
+              offerToReceiveVideo: true
+            });
             await peer.setLocalDescription(offer);
             channel.send({
               type: 'broadcast',
@@ -120,7 +123,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
 
         let peer = peersRef.current.get(payload.senderId);
         if (!peer) {
-          peer = createPeer(payload.senderId, localStream, false);
+          peer = createPeer(payload.senderId, localStream || new MediaStream(), false);
           peersRef.current.set(payload.senderId, peer);
         }
 
@@ -197,6 +200,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
     const infoInterval = setInterval(sendIdentity, 5000);
 
     const handleAdminCommand = (action: string) => {
+      if (!localStream) return;
       if (action === 'MUTE') {
         localStream.getAudioTracks().forEach(t => t.enabled = false);
         toast({ title: "Muted by Admin", description: "Your microphone has been disabled." });
