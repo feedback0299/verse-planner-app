@@ -39,13 +39,17 @@ const VideoRoom = () => {
 
   const checkAdminStatus = async () => {
     setIsLoading(true);
-    const adminSession = localStorage.getItem('admin_session');
-    const magazineSession = localStorage.getItem('magazine_admin_session');
-    
-    if (adminSession || magazineSession) {
-      const session = JSON.parse(adminSession || magazineSession || '{}');
-      setIsAdmin(true);
-      setName(session.user?.name || 'Admin');
+    try {
+      const adminSession = localStorage.getItem('admin_session');
+      const magazineSession = localStorage.getItem('magazine_admin_session');
+      
+      if (adminSession || magazineSession) {
+        const session = JSON.parse(adminSession || magazineSession || '{}');
+        setIsAdmin(true);
+        setName(session.user?.name || 'Admin');
+      }
+    } catch (e) {
+      console.error("Auth status check failed:", e);
     }
     setIsLoading(false);
   };
@@ -54,6 +58,9 @@ const VideoRoom = () => {
     setIsRetryingMedia(true);
     setMediaError(null);
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('NOT_SUPPORTED');
+      }
       const stream = await navigator.mediaDevices.getUserMedia(options);
       setLocalStream(stream);
       setIsLocalVideoOff(!options.video);
@@ -63,22 +70,14 @@ const VideoRoom = () => {
       console.error("Error accessing media devices:", err);
       let errorMsg = "Could not access camera/microphone.";
       
-      if (err.name === 'NotAllowedError') {
-        errorMsg = "Permissions Blocked. Please allow camera and microphone access.";
-        toast({ 
-          variant: "destructive", 
-          title: "Permissions Blocked", 
-          description: "Please click the 'lock' icon in the address bar and allow access, then refresh." 
-        });
+      if (err.message === 'NOT_SUPPORTED') {
+        errorMsg = "WebRTC is not supported in this browser/context.";
+      } else if (err.name === 'NotAllowedError') {
+        errorMsg = "Permissions Blocked. Please allow access in settings.";
       } else if (err.name === 'NotReadableError') {
-        errorMsg = "Camera/Microphone is in use by another application or tab.";
-        toast({
-          variant: "destructive",
-          title: "Device in Use",
-          description: "Your camera or microphone is being used by another app. Try joining with Audio Only or close other apps."
-        });
+        errorMsg = "Device Busy: Camera/Mic is used by another app.";
       } else if (err.name === 'NotFoundError') {
-        errorMsg = "No camera or microphone found on this device.";
+        errorMsg = "No media devices found.";
       }
       
       setMediaError(errorMsg);
@@ -118,7 +117,8 @@ const VideoRoom = () => {
   };
 
   // Filter participants based on role requirements
-  const visibleParticipants = participants.filter(p => {
+  const visibleParticipants = (participants || []).filter(p => {
+    if (!p) return false;
     if (isAdmin) return true; // Admin sees everyone
     return p.isAdmin; // Non-admin ONLY sees Admins
   });
@@ -230,6 +230,9 @@ const VideoRoom = () => {
 
   return (
     <div className={`min-h-screen bg-slate-950 text-white flex flex-col overflow-hidden font-sans ${isAdmin ? 'pt-24' : ''}`}>
+      <style>{`
+        .mirror { transform: scaleX(-1); }
+      `}</style>
       {/* Header - Styled specifically for Admin/User needs */}
       <div className={`h-16 border-b border-white/5 flex items-center justify-between px-6 bg-slate-900/40 backdrop-blur-xl z-20 ${isAdmin ? '' : 'fixed top-0 left-0 right-0'}`}>
         <div className="flex items-center gap-4">
@@ -389,9 +392,12 @@ const ParticipantTile = ({
 
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.srcObject = isLocal ? stream : participant?.stream;
+      const activeStream = isLocal ? stream : participant?.stream;
+      if (videoRef.current.srcObject !== activeStream) {
+        videoRef.current.srcObject = activeStream || null;
+      }
     }
-  }, [stream, participant?.stream]);
+  }, [stream, participant?.stream, isLocal]);
 
   return (
     <div className="group relative rounded-3xl overflow-hidden bg-slate-900/80 border border-white/10 shadow-2xl transition-all hover:border-blue-500/30">
