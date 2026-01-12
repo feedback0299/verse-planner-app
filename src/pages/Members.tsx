@@ -582,32 +582,31 @@ const Members = () => {
                     : `Managing ${members.filter(m => !m.is_deleted).length} registered members`)}
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 w-full md:w-auto">
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             {view === 'list' && (
               <>
-                <Button onClick={() => setView('map')} className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold h-12 rounded-xl shadow-sm hover:shadow-md transition-all mr-2" disabled={loading || isUploading}>
-                  <MapIcon className="mr-2 h-4 w-4" /> Map View
+                <Button onClick={() => setView('map')} className="flex-1 md:flex-none bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold h-11 rounded-xl shadow-sm text-sm" disabled={loading || isUploading}>
+                  <MapIcon className="mr-2 h-4 w-4" /> Map
                 </Button>
-                <Button onClick={() => setView('add')} className="bg-spiritual-blue hover:bg-blue-700 font-bold h-12 rounded-xl shadow hover:shadow-lg transition-all" disabled={loading || isUploading}>
-                  <Plus className="mr-2 h-4 w-4" /> New Member
+                <Button onClick={() => setView('add')} className="flex-1 md:flex-none bg-spiritual-blue hover:bg-blue-700 font-bold h-11 rounded-xl shadow text-sm" disabled={loading || isUploading}>
+                  <Plus className="mr-2 h-4 w-4" /> New
                 </Button>
-                <Button variant="outline" onClick={() => { setView('deleted'); setCurrentPage(1); }} className="border-slate-200 font-bold h-12 rounded-xl" disabled={loading || isUploading}>
-                  <History className="mr-2 h-4 w-4" /> View Archive
+                <Button variant="outline" onClick={() => { setView('deleted'); setCurrentPage(1); }} className="flex-1 md:flex-none border-slate-200 font-bold h-11 rounded-xl text-sm" disabled={loading || isUploading}>
+                  <History className="mr-2 h-4 w-4" /> Archive
                 </Button>
               </>
             )}
             {view === 'deleted' && (
-              <Button variant="outline" onClick={() => { setView('list'); setCurrentPage(1); }} className="border-slate-200 font-bold h-12 rounded-xl" disabled={loading || isUploading}>
-                <Users className="mr-2 h-4 w-4" /> Back to Active
+              <Button variant="outline" onClick={() => { setView('list'); setCurrentPage(1); }} className="flex-1 md:flex-none border-slate-200 font-bold h-11 rounded-xl text-sm" disabled={loading || isUploading}>
+                <Users className="mr-2 h-4 w-4" /> Active
               </Button>
             )}
             
-            {/* Future Improvement: Add Google Sheets integration here */}
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1 md:flex-none font-bold h-12 rounded-xl" disabled={loading || isUploading}>
-              <Upload className="mr-2 h-4 w-4" /> Bulk Upload(excel)
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1 md:flex-none font-bold h-11 rounded-xl text-sm" disabled={loading || isUploading}>
+              <Upload className="mr-2 h-4 w-4" /> Upload
             </Button>
             <input type="file" ref={fileInputRef} onChange={handleBulkUpload} accept=".csv,.xlsx,.xls,.ods" className="hidden" />
-            <Button variant="destructive" onClick={handleLogout} className="flex-1 md:flex-none font-bold h-12 rounded-xl shadow hover:shadow-lg transition-all" disabled={loading || isUploading}>
+            <Button variant="destructive" onClick={handleLogout} className="flex-1 md:flex-none font-bold h-11 rounded-xl text-sm" disabled={loading || isUploading}>
               <LogOut className="mr-2 h-4 w-4" /> Exit
             </Button>
           </div>

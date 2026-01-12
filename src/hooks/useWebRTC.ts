@@ -12,7 +12,7 @@ export interface Participant {
   connectionState?: RTCPeerConnectionState;
 }
 
-export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localStream: MediaStream | null) => {
+export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localStream: MediaStream | null, hasJoined: boolean) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [signalingError, setSignalingError] = useState<string | null>(null);
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
@@ -69,7 +69,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
   }, []);
 
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !hasJoined) return;
 
     const channel = supabase.channel(`room_${roomId}`, {
       config: { broadcast: { self: false, ack: true } }
@@ -89,44 +89,51 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
       });
     };
 
+    const startNegotiation = async (targetId: string) => {
+      if (peersRef.current.has(targetId)) return;
+      if (myIdRef.current <= targetId) return; // Deterministic initiator
+
+      try {
+        const peer = createPeer(targetId, localStream || new MediaStream(), true);
+        peersRef.current.set(targetId, peer);
+        
+        const offer = await peer.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true
+        });
+        await peer.setLocalDescription(offer);
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'offer',
+            payload: { 
+              targetId: targetId, 
+              senderId: myIdRef.current, 
+              offer, 
+              name: nameRef.current || 'User', 
+              isAdmin: isAdminRef.current 
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failure starting negotiation:", err);
+      }
+    };
+
     channel
       .on('broadcast', { event: 'join' }, async ({ payload }) => {
         if (!payload || !payload.id) return;
-        // Redundantly broadcast our info to the new joiner
         sendIdentity();
-        
-        // Start negotiation if we are the older peer (lexicographical check for determinism)
-        if (myIdRef.current > payload.id) {
-          try {
-            const peer = createPeer(payload.id, localStream || new MediaStream(), true);
-            peersRef.current.set(payload.id, peer);
-            
-            const offer = await peer.createOffer({
-              offerToReceiveAudio: true,
-              offerToReceiveVideo: true
-            });
-            await peer.setLocalDescription(offer);
-            channel.send({
-              type: 'broadcast',
-              event: 'offer',
-              payload: { 
-                targetId: payload.id, 
-                senderId: myIdRef.current, 
-                offer, 
-                name: nameRef.current || 'User', 
-                isAdmin: isAdminRef.current 
-              }
-            });
-          } catch (err) {
-            console.error("Failure creating/sending offer:", err);
-          }
-        }
+        startNegotiation(payload.id);
       })
       .on('broadcast', { event: 'participant-info' }, ({ payload }) => {
+        if (!payload || !payload.id) return;
         setParticipants(prev => {
           if (prev.find(p => p.id === payload.id)) return prev;
           return [...prev, { ...payload, stream: null, isMuted: false, isVideoOff: false }];
         });
+        // Catch-up negotiation
+        startNegotiation(payload.id);
       })
       .on('broadcast', { event: 'leave' }, ({ payload }) => {
         setParticipants(prev => prev.filter(p => p.id !== payload.id));
@@ -267,7 +274,7 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
       });
       peersRef.current.clear();
     };
-  }, [roomId, localStream]); // Removed name and isAdmin from dependencies
+  }, [roomId, localStream, hasJoined]); // Added hasJoined to dependencies
 
   const sendCommand = (targetId: string | 'all', action: string) => {
     if (!isAdmin) return;

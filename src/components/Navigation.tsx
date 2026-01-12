@@ -47,6 +47,7 @@ const Navigation = () => {
     { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen, visible: true },
     { name: t('navigation.calendar'), path: '/calendar', icon: Calendar, visible: true },
     { name: t('navigation.publisher'), path: '/magazine-admin', icon: Lock, visible: isPublisherLoggedIn },
+    { name: "Church Registry", path: '/members', icon: Users, visible: true },
     { name: t('navigation.admin'), path: '/admin', icon: Lock, visible: isAdminLoggedIn },
   ].filter(link => link.visible);
 
