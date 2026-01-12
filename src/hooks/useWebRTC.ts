@@ -18,7 +18,17 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
   const pendingCandidatesRef = useRef<Map<string, RTCIceCandidate[]>>(new Map());
   const channelRef = useRef<any>(null);
   const myIdRef = useRef<string>(Math.random().toString(36).substring(2, 11));
+  const nameRef = useRef(name);
+  const isAdminRef = useRef(isAdmin);
   const { toast } = useToast();
+
+  useEffect(() => {
+    nameRef.current = name;
+  }, [name]);
+
+  useEffect(() => {
+    isAdminRef.current = isAdmin;
+  }, [isAdmin]);
 
   const createPeer = useCallback((targetId: string, stream: MediaStream, initiator: boolean) => {
     const peer = new RTCPeerConnection({
@@ -63,12 +73,18 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
     const channel = supabase.channel(`room_${roomId}`, {
       config: { broadcast: { self: false, ack: true } }
     });
+    channelRef.current = channel;
 
     const sendIdentity = () => {
-      channel.send({
+      if (!channelRef.current) return;
+      channelRef.current.send({
         type: 'broadcast',
         event: 'participant-info',
-        payload: { id: myIdRef.current, name, isAdmin }
+        payload: { 
+          id: myIdRef.current, 
+          name: nameRef.current || 'User', 
+          isAdmin: isAdminRef.current 
+        }
       });
     };
 
@@ -92,7 +108,13 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
             channel.send({
               type: 'broadcast',
               event: 'offer',
-              payload: { targetId: payload.id, senderId: myIdRef.current, offer, name, isAdmin }
+              payload: { 
+                targetId: payload.id, 
+                senderId: myIdRef.current, 
+                offer, 
+                name: nameRef.current || 'User', 
+                isAdmin: isAdminRef.current 
+              }
             });
           } catch (err) {
             console.error("Failure creating/sending offer:", err);
@@ -192,7 +214,11 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
           channel.send({
             type: 'broadcast',
             event: 'join',
-            payload: { id: myIdRef.current, name, isAdmin }
+            payload: { 
+              id: myIdRef.current, 
+              name: nameRef.current || 'User', 
+              isAdmin: isAdminRef.current 
+            }
           });
         }
       });
@@ -223,10 +249,16 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
         event: 'leave',
         payload: { id: myIdRef.current }
       });
-      channel.unsubscribe();
-      peersRef.current.forEach(peer => peer.close());
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
+      peersRef.current.forEach(peer => {
+        try { peer.close(); } catch (e) {}
+      });
+      peersRef.current.clear();
     };
-  }, [roomId, localStream, name, isAdmin, createPeer]);
+  }, [roomId, localStream]); // Removed name and isAdmin from dependencies
 
   const sendCommand = (targetId: string | 'all', action: string) => {
     if (!isAdmin) return;

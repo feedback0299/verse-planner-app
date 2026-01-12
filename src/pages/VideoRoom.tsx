@@ -20,6 +20,7 @@ const VideoRoom = () => {
   const [hasJoined, setHasJoined] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [componentError, setComponentError] = useState<string | null>(null);
   
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isLocalMuted, setIsLocalMuted] = useState(false);
@@ -140,13 +141,7 @@ const VideoRoom = () => {
           <CardContent>
             <div className="mb-6 relative aspect-video bg-slate-800 rounded-2xl overflow-hidden border border-white/5 shadow-inner group">
               {localStream && !isLocalVideoOff ? (
-                <video 
-                  autoPlay 
-                  muted 
-                  playsInline 
-                  ref={el => { if (el) el.srcObject = localStream; }} 
-                  className="w-full h-full object-cover mirror"
-                />
+                <LocalVideoView stream={localStream} />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 p-6 text-center">
                   <div className="p-4 bg-slate-700/50 rounded-full mb-4">
@@ -380,15 +375,33 @@ const VideoRoom = () => {
 };
 
 // Sub-components for cleaner code
+const LocalVideoView = ({ stream }: { stream: MediaStream }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+  return (
+    <video 
+      autoPlay 
+      muted 
+      playsInline 
+      ref={videoRef} 
+      className="w-full h-full object-cover mirror"
+    />
+  );
+};
+
 const ParticipantTile = ({ 
-  stream, participant, name, isAdmin, isLocal, isLocalMuted, isLocalVideoOff,
+  stream, participant, name, isAdmin, isLocal, isMuted, isVideoOff,
   isAdminControl, onMute, onKick, onStopVideo 
 }: any) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const displayName = isLocal ? name : participant?.name;
   const displayAdmin = isLocal ? isAdmin : participant?.isAdmin;
-  const isMuted = isLocal ? isLocalMuted : participant?.isMuted;
-  const isVideoOff = isLocal ? isLocalVideoOff : participant?.isVideoOff;
+  const mutedStatus = isLocal ? isMuted : participant?.isMuted;
+  const videoOffStatus = isLocal ? isVideoOff : participant?.isVideoOff;
 
   useEffect(() => {
     if (videoRef.current) {
@@ -422,8 +435,8 @@ const ParticipantTile = ({
                <Loader2 className="h-3 w-3 animate-spin" /> {participant.connectionState.toUpperCase()}
              </div>
            )}
-           {isMuted && <div className="p-2 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-md text-red-500 shadow-lg"><MicOff className="h-4 w-4" /></div>}
-           {isVideoOff && <div className="p-2 rounded-xl bg-slate-950/80 border border-white/5 backdrop-blur-md text-slate-400 shadow-lg"><VideoOff className="h-4 w-4" /></div>}
+            {mutedStatus && <div className="p-2 rounded-xl bg-red-500/20 border border-red-500/30 backdrop-blur-md text-red-500 shadow-lg"><MicOff className="h-4 w-4" /></div>}
+            {videoOffStatus && <div className="p-2 rounded-xl bg-slate-950/80 border border-white/5 backdrop-blur-md text-slate-400 shadow-lg"><VideoOff className="h-4 w-4" /></div>}
         </div>
 
         {/* Admin Controls on Tile */}
