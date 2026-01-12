@@ -143,20 +143,20 @@ const MagazineAdmin = () => {
         </div>
 
         <Tabs defaultValue="magazine" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-8 bg-white border h-14 rounded-2xl p-1">
-                <TabsTrigger value="magazine" className="flex items-center gap-2">
+            <TabsList className="flex w-full overflow-x-auto justify-start mb-8 bg-white border h-14 rounded-2xl p-1 scrollbar-hide">
+                <TabsTrigger value="magazine" className="flex items-center gap-2 whitespace-nowrap px-6">
                     <BookOpen className="h-4 w-4" /> Magazine
                 </TabsTrigger>
-                <TabsTrigger value="planner" className="flex items-center gap-2">
+                <TabsTrigger value="planner" className="flex items-center gap-2 whitespace-nowrap px-6">
                     <Calendar className="h-4 w-4" /> Bible Planner
                 </TabsTrigger>
-                <TabsTrigger value="monthly_verse" className="flex items-center gap-2">
+                <TabsTrigger value="monthly_verse" className="flex items-center gap-2 whitespace-nowrap px-6">
                     <Star className="h-4 w-4" /> Monthly Verse
                 </TabsTrigger>
-                <TabsTrigger value="annual_verse" className="flex items-center gap-2">
+                <TabsTrigger value="annual_verse" className="flex items-center gap-2 whitespace-nowrap px-6">
                     <Target className="h-4 w-4" /> Annual Verse
                 </TabsTrigger>
-                <TabsTrigger value="meetings" className="flex items-center gap-2">
+                <TabsTrigger value="meetings" className="flex items-center gap-2 whitespace-nowrap px-6">
                     <Video className="h-4 w-4" /> Meetings
                 </TabsTrigger>
             </TabsList>
@@ -345,14 +345,14 @@ const MagazineAdmin = () => {
                                                     <h4 className="font-bold text-slate-900 truncate">{room.name}</h4>
                                                     <p className="text-xs font-mono text-blue-600 uppercase tracking-tighter">{room.room_id}</p>
                                                 </div>
-                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(room.room_id)} className="h-9 w-9 rounded-full hover:bg-blue-50 text-blue-600" title="Copy ID">
+                                                <div className="flex gap-1 md:gap-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(room.room_id)} className="h-9 w-9 rounded-full hover:bg-blue-50 text-blue-600 border border-transparent hover:border-blue-100" title="Copy ID">
                                                         <Copy className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => navigate(`/room/${room.room_id}`)} className="h-9 w-9 rounded-full hover:bg-green-50 text-green-600" title="Join Room">
+                                                    <Button variant="ghost" size="icon" onClick={() => navigate(`/room/${room.room_id}`)} className="h-9 w-9 rounded-full hover:bg-green-50 text-green-600 border border-transparent hover:border-green-100" title="Join Room">
                                                         <ExternalLink className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRoom(room.room_id)} className="h-9 w-9 rounded-full hover:bg-red-50 text-red-600" title="Delete Room">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRoom(room.room_id)} className="h-9 w-9 rounded-full hover:bg-red-50 text-red-600 border border-transparent hover:border-red-100" title="Delete Room">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>

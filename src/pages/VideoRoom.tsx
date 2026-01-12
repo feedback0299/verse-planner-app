@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Video, VideoOff, Mic, MicOff, PhoneOff, 
-  Users, Crown, VolumeX, LogOut, Loader2, XCircle
+  Users, Crown, VolumeX, LogOut, Loader2, XCircle, Share2, Copy
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useWebRTC, Participant } from '@/hooks/useWebRTC';
@@ -34,7 +34,7 @@ const VideoRoom = () => {
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isRetryingMedia, setIsRetryingMedia] = useState(false);
 
-  const { participants, sendCommand, myId, signalingError } = useWebRTC(roomId || '', name, isAdmin, localStream);
+  const { participants, sendCommand, myId, signalingError } = useWebRTC(roomId || '', name, isAdmin, localStream, hasJoined);
   
   useEffect(() => {
     if (signalingError) setComponentError(signalingError);
@@ -270,6 +270,18 @@ const VideoRoom = () => {
                 <span className="text-xs font-bold text-slate-300">{participants.length + 1}</span>
              </div>
            )}
+           <Button 
+             variant="outline" 
+             size="sm" 
+             onClick={() => {
+               const url = window.location.href;
+               navigator.clipboard.writeText(url);
+               toast({ title: "Invite Link Copied", description: "Share this link with participants." });
+             }} 
+             className="rounded-full px-5 bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all font-bold hidden sm:flex"
+           >
+             <Share2 className="h-4 w-4 mr-2" /> Invite
+           </Button>
            <Button variant="destructive" size="sm" onClick={leaveRoom} className="rounded-full px-5 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all font-bold">
              <LogOut className="h-4 w-4 mr-2" /> Leave
            </Button>
