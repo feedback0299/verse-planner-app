@@ -129,8 +129,10 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
       .on('broadcast', { event: 'participant-info' }, ({ payload }) => {
         if (!payload || !payload.id) return;
         setParticipants(prev => {
-          if (prev.find(p => p.id === payload.id)) return prev;
-          return [...prev, { ...payload, stream: null, isMuted: false, isVideoOff: false }];
+          if (prev.find(p => p.id === payload.id)) {
+            return prev.map(p => p.id === payload.id ? { ...p, ...payload } : p);
+          }
+          return [...prev, { ...payload, stream: null }];
         });
         // Catch-up negotiation
         startNegotiation(payload.id);
@@ -246,10 +248,16 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
       if (!localStream) return;
       if (action === 'MUTE') {
         localStream.getAudioTracks().forEach(t => t.enabled = false);
-        toast({ title: "Muted by Admin", description: "Your microphone has been disabled." });
+        toast({ title: "Muted by Admin", description: "Your microphone was disabled by host." });
+      } else if (action === 'UNMUTE') {
+        localStream.getAudioTracks().forEach(t => t.enabled = true);
+        toast({ title: "Unmuted by Admin", description: "Your microphone was enabled by host." });
       } else if (action === 'STOP_VIDEO') {
         localStream.getVideoTracks().forEach(t => t.enabled = false);
-        toast({ title: "Video Stopped by Admin", description: "Your camera has been disabled." });
+        toast({ title: "Video Stopped", description: "Your camera was disabled by host." });
+      } else if (action === 'START_VIDEO') {
+        localStream.getVideoTracks().forEach(t => t.enabled = true);
+        toast({ title: "Video Started", description: "Your camera was enabled by host." });
       } else if (action === 'KICK') {
         localStream.getTracks().forEach(t => t.stop());
         window.location.href = '/';
@@ -285,5 +293,20 @@ export const useWebRTC = (roomId: string, name: string, isAdmin: boolean, localS
     });
   };
 
-  return { participants, sendCommand, myId: myIdRef.current, signalingError };
+  const updateMediaState = (isMuted: boolean, isVideoOff: boolean) => {
+    if (!channelRef.current) return;
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'participant-info',
+      payload: { 
+        id: myIdRef.current, 
+        name: nameRef.current || 'User', 
+        isAdmin: isAdminRef.current,
+        isMuted,
+        isVideoOff
+      }
+    });
+  };
+
+  return { participants, sendCommand, updateMediaState, myId: myIdRef.current, signalingError };
 };
