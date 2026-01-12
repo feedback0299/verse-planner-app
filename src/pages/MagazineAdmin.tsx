@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, Calendar, Star, Target, Video, Plus, ExternalLink } from 'lucide-react';
+import { 
+  Loader2, Upload, FileText, Lock, Eye, LogOut, BookOpen, 
+  Calendar, Star, Target, Video, Plus, ExternalLink, Copy, Trash2 
+} from 'lucide-react';
 import { uploadMagazinePDF, getMagazineUrl } from '@/lib/commonService/magazineService';
+import { createMeetingRoom, getMeetingRooms, deleteMeetingRoom } from '@/lib/commonService/meetingRoomService';
 import { Document, Page, pdfjs } from 'react-pdf';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import PeriodicVerseUploader from '@/components/PeriodicVerseUploader';
@@ -23,6 +27,8 @@ const MagazineAdmin = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
   
   const { toast } = useToast();
 
@@ -66,6 +72,55 @@ const MagazineAdmin = () => {
       setFile(null);
     }
     setUploading(false);
+  };
+
+  const fetchRooms = async () => {
+    setLoadingRooms(true);
+    const { data, error } = await getMeetingRooms();
+    if (error) {
+      console.error("Error fetching rooms:", error);
+    } else {
+      setRooms(data || []);
+    }
+    setLoadingRooms(false);
+  };
+
+  React.useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const handleCreateRoom = async () => {
+    const nameInput = document.getElementById('new-room-name') as HTMLInputElement;
+    const name = nameInput.value;
+    if (name) {
+      const roomId = Math.random().toString(36).substring(2, 9);
+      const { error } = await createMeetingRoom(name, roomId);
+      if (error) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to create room in database." });
+      } else {
+        toast({ title: "Room Created", description: `Room "${name}" is now active.` });
+        nameInput.value = '';
+        fetchRooms();
+        navigate(`/room/${roomId}`);
+      }
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    const { error } = await deleteMeetingRoom(roomId);
+    if (error) {
+       toast({ variant: "destructive", title: "Error", description: "Failed to delete room." });
+    } else {
+       toast({ title: "Room Deleted", description: "The room has been removed." });
+       fetchRooms();
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Room ID copied to clipboard." });
+    const joinInput = document.getElementById('join-room-id') as HTMLInputElement;
+    if (joinInput) joinInput.value = text;
   };
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
@@ -245,34 +300,65 @@ const MagazineAdmin = () => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <Label>Create New Room</Label>
-                                <div className="flex gap-2">
-                                    <Input placeholder="Room Name (e.g. Sunday Service)" id="new-room-name" />
-                                    <Button onClick={() => {
-                                        const name = (document.getElementById('new-room-name') as HTMLInputElement).value;
-                                        if (name) {
-                                            const id = Math.random().toString(36).substring(2, 9);
-                                            navigate(`/room/${id}`);
-                                        }
-                                    }}>
-                                        <Plus className="h-4 w-4 mr-2" /> Create
-                                    </Button>
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border">
+                                    <Label className="font-bold text-slate-700">Create New Room</Label>
+                                    <div className="flex gap-2">
+                                        <Input placeholder="Room Name (e.g. Sunday Service)" id="new-room-name" className="rounded-xl" />
+                                        <Button onClick={handleCreateRoom} className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+                                            <Plus className="h-4 w-4 mr-2" /> Create
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-medium italic">Share the link with participants once you join.</p>
                                 </div>
-                                <p className="text-xs text-gray-500">Rooms are available 24/7. Share the link with participants once you join.</p>
+
+                                <div className="space-y-4 p-4 bg-slate-50 rounded-2xl border">
+                                    <Label className="font-bold text-slate-700">Join Existing Room</Label>
+                                    <div className="flex gap-2">
+                                        <Input placeholder="Enter Room ID" id="join-room-id" className="rounded-xl" />
+                                        <Button variant="outline" onClick={() => {
+                                            const id = (document.getElementById('join-room-id') as HTMLInputElement).value;
+                                            if (id) navigate(`/room/${id}`);
+                                        }} className="rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50">
+                                            <ExternalLink className="h-4 w-4 mr-2" /> Join
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-4">
-                                <Label>Join Existing Room</Label>
-                                <div className="flex gap-2">
-                                    <Input placeholder="Enter Room ID" id="join-room-id" />
-                                    <Button variant="outline" onClick={() => {
-                                        const id = (document.getElementById('join-room-id') as HTMLInputElement).value;
-                                        if (id) navigate(`/room/${id}`);
-                                    }}>
-                                        <ExternalLink className="h-4 w-4 mr-2" /> Join
-                                    </Button>
+                                <Label className="font-bold text-slate-700 text-lg flex items-center gap-2">
+                                    Active Meeting Rooms
+                                    {loadingRooms && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                                </Label>
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                                    {rooms.length === 0 && !loadingRooms ? (
+                                        <div className="text-center py-10 border-2 border-dashed rounded-2xl text-slate-400">
+                                            <Video className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                                            <p className="text-sm">No active rooms found</p>
+                                        </div>
+                                    ) : (
+                                        rooms.map((room) => (
+                                            <div key={room.room_id} className="flex items-center justify-between p-4 bg-white border rounded-2xl hover:shadow-md transition-all group">
+                                                <div className="min-w-0 flex-1">
+                                                    <h4 className="font-bold text-slate-900 truncate">{room.name}</h4>
+                                                    <p className="text-xs font-mono text-blue-600 uppercase tracking-tighter">{room.room_id}</p>
+                                                </div>
+                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(room.room_id)} className="h-9 w-9 rounded-full hover:bg-blue-50 text-blue-600" title="Copy ID">
+                                                        <Copy className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => navigate(`/room/${room.room_id}`)} className="h-9 w-9 rounded-full hover:bg-green-50 text-green-600" title="Join Room">
+                                                        <ExternalLink className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteRoom(room.room_id)} className="h-9 w-9 rounded-full hover:bg-red-50 text-red-600" title="Delete Room">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>

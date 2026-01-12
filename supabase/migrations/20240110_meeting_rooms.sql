@@ -1,8 +1,9 @@
 -- Create meeting_rooms table
 CREATE TABLE IF NOT EXISTS public.meeting_rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
-  owner_id INTEGER REFERENCES public.admin_data(id), -- Assuming admin_data.id is integer
+  owner_id UUID REFERENCES public.admin_data(id), 
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

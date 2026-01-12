@@ -24,6 +24,8 @@ const VideoRoom = () => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isLocalMuted, setIsLocalMuted] = useState(false);
   const [isLocalVideoOff, setIsLocalVideoOff] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [isRetryingMedia, setIsRetryingMedia] = useState(false);
 
   const { participants, sendCommand, myId } = useWebRTC(roomId || '', name, isAdmin, localStream);
   
@@ -48,19 +50,41 @@ const VideoRoom = () => {
     setIsLoading(false);
   };
 
-  const requestMedia = async () => {
+  const requestMedia = async (options = { video: true, audio: true }) => {
+    setIsRetryingMedia(true);
+    setMediaError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia(options);
       setLocalStream(stream);
+      setIsLocalVideoOff(!options.video);
+      setIsLocalMuted(!options.audio);
+      return true;
     } catch (err: any) {
       console.error("Error accessing media devices:", err);
+      let errorMsg = "Could not access camera/microphone.";
+      
       if (err.name === 'NotAllowedError') {
+        errorMsg = "Permissions Blocked. Please allow camera and microphone access.";
         toast({ 
           variant: "destructive", 
           title: "Permissions Blocked", 
-          description: "Please click the 'lock' icon in the address bar and set Camera/Microphone to 'Allow', then refresh." 
+          description: "Please click the 'lock' icon in the address bar and allow access, then refresh." 
         });
+      } else if (err.name === 'NotReadableError') {
+        errorMsg = "Camera/Microphone is in use by another application or tab.";
+        toast({
+          variant: "destructive",
+          title: "Device in Use",
+          description: "Your camera or microphone is being used by another app. Try joining with Audio Only or close other apps."
+        });
+      } else if (err.name === 'NotFoundError') {
+        errorMsg = "No camera or microphone found on this device.";
       }
+      
+      setMediaError(errorMsg);
+      return false;
+    } finally {
+      setIsRetryingMedia(false);
     }
   };
 
@@ -68,11 +92,8 @@ const VideoRoom = () => {
     e.preventDefault();
     if (!name.trim()) return;
     
-    if (!localStream) {
-      requestMedia().then(() => setHasJoined(true));
-    } else {
-      setHasJoined(true);
-    }
+    // Always allow joining, even if media failed (they can still see/hear others)
+    setHasJoined(true);
   };
 
   const toggleMic = () => {
@@ -127,10 +148,38 @@ const VideoRoom = () => {
                   className="w-full h-full object-cover mirror"
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                  <div className="p-4 bg-slate-700/50 rounded-full">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 p-6 text-center">
+                  <div className="p-4 bg-slate-700/50 rounded-full mb-4">
                     <VideoOff className="h-10 w-10 text-slate-500" />
                   </div>
+                  {mediaError && (
+                    <div className="space-y-3">
+                      <p className="text-sm text-red-400 font-medium">{mediaError}</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => requestMedia()}
+                          disabled={isRetryingMedia}
+                          className="bg-slate-800 border-slate-700 text-xs"
+                        >
+                          {isRetryingMedia ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                          Retry Full Access
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => requestMedia({ video: false, audio: true })}
+                          disabled={isRetryingMedia}
+                          className="bg-slate-800 border-slate-700 text-xs"
+                        >
+                          Join Audio Only
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               
