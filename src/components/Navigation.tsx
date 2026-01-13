@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Calendar, Lock, Menu, X, BookOpen, Users } from 'lucide-react';
+import { Home, Calendar, Lock, Menu, X, BookOpen, Users, Globe, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,6 +11,7 @@ const Navigation = () => {
   const { currentLanguage, setLanguage, t } = useLanguage();
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isPublisherLoggedIn, setIsPublisherLoggedIn] = useState(false);
+  const [isBranchAdminLoggedIn, setIsBranchAdminLoggedIn] = useState(false);
 
   const languages = [
     { code: 'ta', label: '🇮🇳 TAMIL தமிழ்' },
@@ -26,6 +27,7 @@ const Navigation = () => {
     const checkAuth = () => {
       setIsAdminLoggedIn(!!localStorage.getItem('admin_session'));
       setIsPublisherLoggedIn(!!localStorage.getItem('magazine_admin_session'));
+      setIsBranchAdminLoggedIn(!!localStorage.getItem('branch_admin_session'));
     };
     checkAuth();
     const interval = setInterval(checkAuth, 1000);
@@ -46,6 +48,8 @@ const Navigation = () => {
     { name: t('navigation.home'), path: '/', icon: Home, visible: true },
     { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen, visible: true },
     { name: t('navigation.calendar'), path: '/calendar', icon: Calendar, visible: true },
+    { name: "World Map", path: '/map', icon: Globe, visible: true },
+    { name: "Branches", path: '/branches', icon: Building2, visible: isBranchAdminLoggedIn },
     { name: t('navigation.publisher'), path: '/magazine-admin', icon: Lock, visible: isPublisherLoggedIn },
     { name: "Church Registry", path: '/members', icon: Users, visible: true },
     { name: t('navigation.admin'), path: '/admin', icon: Lock, visible: isAdminLoggedIn },
@@ -55,7 +59,7 @@ const Navigation = () => {
     <>
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-white/80 backdrop-blur-md shadow-md py-4' : 'bg-transparent py-6'
+          isScrolled || location.pathname !== '/' ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-6'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">

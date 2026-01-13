@@ -13,6 +13,8 @@ import MagazineAdmin from "@/pages/MagazineAdmin";
 import Members from "@/pages/Members";
 import MonthlyPlanner from "@/components/MonthlyPlanner";
 import VideoRoom from "./pages/VideoRoom";
+import WorldMap from "./pages/WorldMap";
+import BranchAdmin from "./pages/BranchAdmin";
 import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import NotFound from "@/pages/NotFound";
@@ -37,6 +39,8 @@ const AppContent = () => {
         <Route path="/magazine" element={<Magazine />} />
         <Route path="/admin/planner" element={<div className="pt-16"><MonthlyPlanner /></div>} />
         <Route path="/room/:roomId" element={<VideoRoom />} />
+        <Route path="/map" element={<WorldMap />} />
+        <Route path="/branches" element={<BranchAdmin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
