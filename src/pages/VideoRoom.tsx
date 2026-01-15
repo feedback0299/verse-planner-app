@@ -15,6 +15,7 @@ import {
   RemoteParticipant,
   Participant,
   LocalParticipant,
+  Track
 } from 'livekit-client';
 import '@livekit/components-styles';
 import { Button } from "@/components/ui/button";
@@ -288,9 +289,7 @@ const ParticipantGrid = ({ isAdmin, allParticipants, localParticipant }: { isAdm
         return (
           <div key={p.identity} className="relative rounded-3xl overflow-hidden border border-white/5 bg-slate-900/50 shadow-2xl transition-all hover:border-blue-500/20">
             {canViewMedia ? (
-              <ParticipantContext.Provider value={p}>
-                <ParticipantTile />
-              </ParticipantContext.Provider>
+              <ParticipantTile trackRef={{ participant: p, source: Track.Source.Camera }} />
             ) : (
               <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
                 <div className="h-24 w-24 rounded-full bg-slate-800 flex items-center justify-center font-bold text-3xl mb-6 text-slate-500 shadow-inner border border-white/5">
