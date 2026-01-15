@@ -147,38 +147,46 @@ const VideoRoomInternal = ({ isAdmin, roomId }: { isAdmin: boolean, roomId: stri
   const decoder = new TextDecoder();
 
   // Reactive full list of everyone in the room
-  const allParticipants = useMemo(() => [localParticipant, ...remoteParticipants], [localParticipant, remoteParticipants]);
+  const allParticipants = useMemo(() => 
+    [localParticipant, ...remoteParticipants].filter(Boolean) as Participant[], 
+    [localParticipant, remoteParticipants]
+  );
 
   // --- Remote Moderation Listener ---
   useEffect(() => {
     const onData = (payload: Uint8Array, participant?: RemoteParticipant) => {
       try {
         const msg = JSON.parse(decoder.decode(payload)) as ModerationMessage;
-        if (msg.type === 'MODERATION') {
+        if (msg.type === 'MODERATION' && localParticipant) {
           if (!msg.targetId || msg.targetId === localParticipant.identity) {
             handleModerationAction(msg.action);
           }
         }
       } catch (e) {}
     };
-    room.on(RoomEvent.DataReceived, onData);
-    return () => { room.off(RoomEvent.DataReceived, onData); };
+    if (room) {
+      room.on(RoomEvent.DataReceived, onData);
+      return () => { room.off(RoomEvent.DataReceived, onData); };
+    }
   }, [room, localParticipant]);
 
   const handleModerationAction = (action: ModerationAction) => {
+    if (!localParticipant) return;
     switch(action) {
       case 'MUTE': localParticipant.setMicrophoneEnabled(false); break;
       case 'UNMUTE': localParticipant.setMicrophoneEnabled(true); break;
       case 'STOP_VIDEO': localParticipant.setCameraEnabled(false); break;
       case 'START_VIDEO': localParticipant.setCameraEnabled(true); break;
-      case 'KICK': room.disconnect(); break;
+      case 'KICK': room?.disconnect(); break;
     }
   };
 
   const sendModeration = (targetId: string, action: ModerationAction) => {
     if (!isAdmin) return;
     const msg = JSON.stringify({ type: 'MODERATION', action, targetId });
-    localParticipant.publishData(encoder.encode(msg), { reliable: true, destinationIdentities: [targetId] });
+    if (localParticipant) {
+      localParticipant.publishData(encoder.encode(msg), { reliable: true, destinationIdentities: [targetId] });
+    }
   };
 
   // --- Strict Privacy Logic (Non-Admin Policy) ---
@@ -200,12 +208,21 @@ const VideoRoomInternal = ({ isAdmin, roomId }: { isAdmin: boolean, roomId: stri
       room.on(RoomEvent.TrackPublished, (_, p) => enforcePrivacy(p as RemoteParticipant));
       return () => { room.off(RoomEvent.ParticipantConnected, enforcePrivacy); };
     }
-  }, [isAdmin, room]);
+  }, [isAdmin, room, localParticipant]);
 
   const leaveRoom = () => {
-    room.disconnect();
+    room?.disconnect();
     navigate(isAdmin ? '/magazine-admin' : '/');
   };
+
+  if (!localParticipant) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
+        <Loader2 className="h-12 w-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-slate-400 animate-pulse">Establishing connection...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen text-white overflow-hidden">
@@ -239,7 +256,7 @@ const VideoRoomInternal = ({ isAdmin, roomId }: { isAdmin: boolean, roomId: stri
                <ParticipantListItem 
                  key={p.identity} 
                  participant={p} 
-                 isMe={p.identity === localParticipant.identity} 
+                 isMe={p.identity === localParticipant?.identity} 
                  isAdminViewer={isAdmin} 
                  onModeration={(action: ModerationAction) => sendModeration(p.identity, action)} 
                />
@@ -262,7 +279,7 @@ const ParticipantGrid = ({ isAdmin, allParticipants, localParticipant }: { isAdm
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 auto-rows-fr h-full">
       {allParticipants.map(p => {
         const isPeerAdmin = p.metadata?.includes('admin') || p.identity.toLowerCase().includes('admin');
-        const isMe = p.identity === localParticipant.identity;
+        const isMe = p.identity === localParticipant?.identity;
         
         // Logic: Viewer is Admin? Show all. Viewer is Local? Show all. Viewer is PeerAdmin? Show.
         // Rule: Non-admins ONLY see video/audio of Admins and themselves.
