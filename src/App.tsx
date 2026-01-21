@@ -17,9 +17,22 @@ import WorldMap from "./pages/WorldMap";
 import BranchAdmin from "./pages/BranchAdmin";
 import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import Register from "@/pages/Register";
+import Login from "@/pages/Login";
+import Planner from "@/pages/Planner";
+import ContestAdmin from "@/pages/ContestAdmin";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const AppContent = () => {
   const location = useLocation();
@@ -41,6 +54,10 @@ const AppContent = () => {
         <Route path="/room/:roomId" element={<VideoRoom />} />
         <Route path="/map" element={<WorldMap />} />
         <Route path="/branches" element={<BranchAdmin />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/planner" element={<Planner />} />
+        <Route path="/admin/contest" element={<ContestAdmin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

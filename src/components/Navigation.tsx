@@ -3,6 +3,7 @@ import { Home, Calendar, Lock, Menu, X, BookOpen, Users, Globe, Building2 } from
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/lib/dbService/supabase';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -12,6 +13,7 @@ const Navigation = () => {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [isPublisherLoggedIn, setIsPublisherLoggedIn] = useState(false);
   const [isBranchAdminLoggedIn, setIsBranchAdminLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   const languages = [
     { code: 'ta', label: '🇮🇳 TAMIL தமிழ்' },
@@ -24,6 +26,18 @@ const Navigation = () => {
   ];
 
   useEffect(() => {
+    // Check initial session
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     const checkAuth = () => {
       setIsAdminLoggedIn(!!localStorage.getItem('admin_session'));
       setIsPublisherLoggedIn(!!localStorage.getItem('magazine_admin_session'));
@@ -39,6 +53,7 @@ const Navigation = () => {
     window.addEventListener('scroll', handleScroll);
     return () => {
       clearInterval(interval);
+      subscription.unsubscribe();
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('scroll', handleScroll);
     };
@@ -46,6 +61,7 @@ const Navigation = () => {
 
   const navLinks = [
     { name: t('navigation.home'), path: '/', icon: Home, visible: true },
+    { name: "Verse Planner", path: '/planner', icon: Calendar, visible: !!user },
     { name: t('navigation.magazine'), path: '/magazine', icon: BookOpen, visible: true },
     { name: t('navigation.calendar'), path: '/calendar', icon: Calendar, visible: true },
     { name: "World Map", path: '/map', icon: Globe, visible: true },
@@ -53,6 +69,8 @@ const Navigation = () => {
     { name: t('navigation.publisher'), path: '/magazine-admin', icon: Lock, visible: isPublisherLoggedIn },
     { name: "Church Registry", path: '/members', icon: Users, visible: true },
     { name: t('navigation.admin'), path: '/admin', icon: Lock, visible: isAdminLoggedIn },
+    { name: "Login", path: '/login', icon: Lock, visible: !user && !isAdminLoggedIn },
+    { name: "Register", path: '/register', icon: Users, visible: !user && !isAdminLoggedIn },
   ].filter(link => link.visible);
 
   return (
@@ -86,6 +104,16 @@ const Navigation = () => {
                 </Button>
               </Link>
             ))}
+
+            {user && (
+              <Button 
+                variant="ghost" 
+                className={`rounded-full px-4 ${isScrolled || location.pathname !== '/' ? 'text-red-500' : 'text-red-300'} hover:bg-red-50/10`}
+                onClick={() => supabase.auth.signOut()}
+              >
+                Sign Out
+              </Button>
+            )}
             
             <select
               value={currentLanguage}
