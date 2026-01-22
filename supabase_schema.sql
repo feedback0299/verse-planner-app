@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS public.contest_readings (
   psalms TEXT,
   proverbs TEXT,
   new_testament TEXT,
+  old_testament TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(day, category)
 );
