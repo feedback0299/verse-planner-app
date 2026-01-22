@@ -99,7 +99,7 @@ const AdminAuthWrapper = ({ children, title, subtitle, sessionKey, loginLogic }:
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pt-24">
       {children}
     </div>
   );

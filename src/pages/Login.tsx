@@ -115,9 +115,6 @@ const Login = () => {
                 <p className="text-sm text-gray-500">
                   Don't have an account? <Link to="/register" className="text-spiritual-blue font-semibold hover:underline">Register now</Link>
                 </p>
-                <p className="text-xs text-slate-400 font-medium pt-4">
-                  For Admin access, please use the <Link to="/admin" className="underline italic">Admin Portal</Link>
-                </p>
               </div>
             </form>
           </CardContent>

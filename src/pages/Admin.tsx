@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, FileSpreadsheet, ShieldCheck, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, FileSpreadsheet, ShieldCheck, Calendar as CalendarIcon, LogOut } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,6 +93,17 @@ const Admin = () => {
             <p className="text-slate-500 font-medium">Manage church events, contest schedules, and video rooms.</p>
           </div>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold"
+              onClick={() => {
+                localStorage.removeItem('admin_session');
+                navigate('/');
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Admin Logout
+            </Button>
             <div className="bg-spiritual-blue/10 p-3 rounded-xl">
                <ShieldCheck className="w-8 h-8 text-spiritual-blue" />
             </div>

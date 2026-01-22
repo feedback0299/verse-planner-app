@@ -76,7 +76,8 @@ const ContestAdmin = () => {
                 category: 'adult',
                 psalms: row['Psalms / சங்கீதம்'] || row.Psalms || row.psalms,
                 proverbs: row['Proverbs / நீதிமொழிகள்'] || row.Proverbs || row.proverbs,
-                new_testament: row['New Testament / புதிய ஏற்பாடு'] || row['New Testament'] || row.nt
+                new_testament: row['New Testament / புதிய ஏற்பாடு'] || row['New Testament'] || row.nt,
+                old_testament: row['Old Testament / பழைய ஏற்பாடு'] || row['Old Testament'] || row.ot || row['Old Testament ']
               });
             }
           });
@@ -164,21 +165,21 @@ const ContestAdmin = () => {
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-spiritual-blue to-green-600 rounded-2xl blur opacity-15 group-hover:opacity-25 transition-opacity duration-500"></div>
           <Card className="relative border shadow-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-            <CardHeader className="border-b bg-slate-50/30 pb-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-100 p-2.5 rounded-xl">
-                      <FileSpreadsheet className="text-green-600 w-6 h-6" />
+            <CardHeader className="border-b bg-slate-50/30 p-6 md:p-8">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-green-600/10 p-3 rounded-2xl">
+                      <FileSpreadsheet className="text-green-600 w-7 h-7" />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl font-extrabold text-slate-900 tracking-tight">Portion Scheduler</CardTitle>
-                      <CardDescription className="text-slate-500 font-medium">Bulk import reading portions using Excel or Google Sheets (CSV/XLSX).</CardDescription>
+                      <CardTitle className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Portion Scheduler</CardTitle>
+                      <CardDescription className="text-slate-500 font-semibold text-sm">Bulk import reading portions using Excel or Google Sheets (CSV/XLSX).</CardDescription>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-4 w-full lg:w-auto">
                    <Input
                     type="file"
                     id="excel-upload"
@@ -190,12 +191,12 @@ const ContestAdmin = () => {
                   <Button 
                     asChild
                     size="lg"
-                    className="flex-1 md:flex-none h-14 px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20 text-lg font-bold rounded-2xl transition-all hover:scale-[1.02]" 
+                    className="w-full lg:w-auto h-14 px-10 bg-green-600 hover:bg-green-700 shadow-xl shadow-green-600/20 text-lg font-black rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]" 
                     disabled={uploading}
                   >
                     <label htmlFor="excel-upload" className="cursor-pointer flex items-center justify-center gap-3">
                       {uploading ? <Loader2 className="animate-spin w-6 h-6" /> : <Upload className="w-6 h-6" />}
-                      {uploading ? "Processing Data..." : "Upload Portion Schedule"}
+                      {uploading ? "Processing..." : "Upload Portion Schedule"}
                     </label>
                   </Button>
                 </div>
@@ -229,7 +230,7 @@ const ContestAdmin = () => {
                    </div>
                    <div>
                      <p className="font-bold text-slate-800">Required Columns</p>
-                     <p className="text-[11px] text-slate-500 mt-1 font-mono uppercase">Day, Psalms, Proverbs, NT</p>
+                     <p className="text-[11px] text-slate-500 mt-1 font-mono uppercase">Day, OT, Psalms, Proverbs, NT</p>
                    </div>
                  </div>
               </div>
@@ -297,25 +298,41 @@ const ContestAdmin = () => {
                             </div>
                           </div>
                           <div className="p-3 flex-1 flex flex-col justify-between gap-3">
-                            <div className="space-y-2">
-                                <div className="p-2 rounded-lg bg-blue-50/50 border border-blue-100/50 group-hover:bg-blue-50 transition-colors">
-                                  <p className="text-[8px] font-black text-blue-600 uppercase tracking-wider mb-0.5">Kids & Teens</p>
-                                  <p className="text-[10px] font-bold text-slate-700 leading-tight truncate">
-                                    {info.kidsPortion ? info.kidsPortion.psalms : "Pending..."}
-                                  </p>
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                  <p className="text-[8px] font-black text-blue-600 uppercase tracking-wider">Kids & Teens</p>
+                                  <div className="grid grid-cols-1 gap-1">
+                                    <div className="text-[10px] bg-blue-50/50 p-1.5 rounded border border-blue-100/50">
+                                      <span className="font-bold text-blue-700">Psalms:</span> {info.kidsPortion?.psalms || "—"}
+                                    </div>
+                                    <div className="text-[10px] bg-blue-50/50 p-1.5 rounded border border-blue-100/50">
+                                      <span className="font-bold text-blue-700">Prov/NT:</span> {info.kidsPortion ? `${info.kidsPortion.proverbs}, ${info.kidsPortion.new_testament}` : "—"}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="p-2 rounded-lg bg-orange-50/50 border border-orange-100/50 group-hover:bg-orange-50 transition-colors">
-                                  <p className="text-[8px] font-black text-spiritual-gold uppercase tracking-wider mb-0.5">Adults</p>
-                                  <p className="text-[10px] font-bold text-slate-700 leading-tight truncate">
-                                    {info.adultPortion ? info.adultPortion.psalms : "Pending..."}
-                                  </p>
+
+                                <div className="space-y-1.5">
+                                  <p className="text-[8px] font-black text-spiritual-gold uppercase tracking-wider">Adults</p>
+                                  <div className="grid grid-cols-1 gap-1">
+                                    {info.adultPortion?.old_testament && (
+                                      <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
+                                        <span className="font-bold text-spiritual-gold">OT:</span> {info.adultPortion.old_testament}
+                                      </div>
+                                    )}
+                                    <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
+                                      <span className="font-bold text-spiritual-gold">Psalms:</span> {info.adultPortion?.psalms || "—"}
+                                    </div>
+                                    <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
+                                      <span className="font-bold text-spiritual-gold">Prov/NT:</span> {info.adultPortion ? `${info.adultPortion.proverbs}, ${info.adultPortion.new_testament}` : "—"}
+                                    </div>
+                                  </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity mt-2">
                                <div className={`w-1.5 h-1.5 rounded-full ${isSun ? 'bg-spiritual-gold' : 'bg-spiritual-blue'}`}></div>
-                               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter truncate">
-                                 {isSun ? "Sun: After 14:00" : "12:00 - 14:00"}
+                               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+                                 {isSun ? "After 14:00" : "12:00 - 14:00"}
                                </p>
                             </div>
                           </div>

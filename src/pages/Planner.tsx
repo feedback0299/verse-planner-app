@@ -159,7 +159,7 @@ const Planner = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border">
           <div className="relative">
-            <h1 className="text-3xl font-bold text-gray-900">70-Day Verse Planner</h1>
+            <h1 className="text-3xl font-bold text-gray-900">70-Day Bible reading contest</h1>
             <p className="text-gray-500 mt-1 flex flex-col md:flex-row md:items-center gap-2">
               <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Start Date: Feb 1, 2026</span>
               <span className="hidden md:inline text-slate-300">|</span>
@@ -253,10 +253,11 @@ const Planner = () => {
                     <thead className="bg-slate-50 border-b">
                       <tr>
                         <th className="px-6 py-4 font-semibold text-gray-700 w-24">Day</th>
+                        <th className="px-6 py-4 font-semibold text-gray-700 w-32 text-center">Status</th>
+                        {cat === 'adult' && <th className="px-6 py-4 font-semibold text-gray-700">Old Testament / பழைய ஏற்பாடு</th>}
                         <th className="px-6 py-4 font-semibold text-gray-700">Psalms / சங்கீதம்</th>
                         <th className="px-6 py-4 font-semibold text-gray-700">Proverbs / நீதிமொழிகள்</th>
                         <th className="px-6 py-4 font-semibold text-gray-700">New Testament / NT</th>
-                        <th className="px-6 py-4 font-semibold text-gray-700 w-32 text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -269,33 +270,39 @@ const Planner = () => {
                           }`}
                         >
                           <td className="px-6 py-4 font-bold text-gray-500">Day {data.day}</td>
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.psalms}</td>
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.proverbs}</td>
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.new_testament}</td>
                           <td className="px-6 py-4 text-center">
-                            {data.day === currentDay ? (
-                              <div className="flex justify-center">
-                                {checkInMutation.isPending && checkInMutation.variables === data.day ? (
+                            <div className="flex justify-center">
+                              {data.day === currentDay ? (
+                                checkInMutation.isPending && checkInMutation.variables === data.day ? (
                                   <Loader2 className="w-6 h-6 animate-spin text-spiritual-blue" />
                                 ) : (
                                   <Checkbox 
                                     checked={isCompleted(data.day)} 
                                     onCheckedChange={() => checkInMutation.mutate(data.day)}
                                     disabled={isCompleted(data.day) || checkInMutation.isPending}
-                                    className="w-6 h-6 border-2 border-spiritual-blue data-[state=checked]:bg-spiritual-blue"
+                                    className="w-6 h-6 border-2 border-spiritual-blue data-[state=checked]:bg-spiritual-blue shadow-sm"
                                   />
-                                )}
-                              </div>
-                            ) : (
-                              <div className="flex justify-center">
-                                {isCompleted(data.day) ? (
+                                )
+                              ) : (
+                                isCompleted(data.day) ? (
                                   <CheckCircle2 className="w-6 h-6 text-green-500" />
                                 ) : (
-                                  <div className="w-6 h-6 border-2 border-gray-200 rounded-sm opacity-20" />
-                                )}
-                              </div>
-                            )}
+                                  <Checkbox 
+                                    disabled
+                                    className="w-6 h-6 border-2 border-gray-200 bg-gray-50 opacity-30 cursor-not-allowed"
+                                  />
+                                )
+                              )}
+                            </div>
                           </td>
+                          {cat === 'adult' && (
+                            <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>
+                              {data.old_testament}
+                            </td>
+                          )}
+                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.psalms}</td>
+                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.proverbs}</td>
+                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.new_testament}</td>
                         </tr>
                       ))}
                     </tbody>
