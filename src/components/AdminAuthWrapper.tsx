@@ -4,20 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, LogOut, LayoutDashboard } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 
 interface AdminAuthWrapperProps {
   children: React.ReactNode;
   title: string;
   subtitle: string;
   sessionKey: string;
-  loginLogic: (email: string, pass: string) => Promise<{ success: boolean; session?: any; message?: string }>;
+  loginLogic: (identity: string, pass: string) => Promise<{ success: boolean; session?: any; message?: string }>;
+  identityLabel?: string;
+  requireIdentity?: boolean; // If false, identity field can be hidden or optional (but for uniformity usually shown)
 }
 
-const AdminAuthWrapper = ({ children, title, subtitle, sessionKey, loginLogic }: AdminAuthWrapperProps) => {
+const AdminAuthWrapper = ({ 
+  children, 
+  title, 
+  subtitle, 
+  sessionKey, 
+  loginLogic, 
+  identityLabel = "Identity / Email",
+  requireIdentity = true
+}: AdminAuthWrapperProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [session, setSession] = useState<any>(null);
-  const [email, setEmail] = useState('');
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -26,32 +36,38 @@ const AdminAuthWrapper = ({ children, title, subtitle, sessionKey, loginLogic }:
     const storedSession = localStorage.getItem(sessionKey);
     if (storedSession) {
       setIsAuthenticated(true);
-      setSession(JSON.parse(storedSession));
     }
+    setLoadingInitial(false);
   }, [sessionKey]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    const result = await loginLogic(email, password);
+    // For some roles (like Branch), identity might be optional in UI but we pass it anyway
+    const result = await loginLogic(identity, password);
     
     if (result.success) {
       setIsAuthenticated(true);
-      setSession(result.session);
+      // Determine what to store. Some logics return a session object.
+      // We also store specific auxiliary keys if needed (like 'member_admin_name')
+      // but standardized session storage is better.
       localStorage.setItem(sessionKey, JSON.stringify(result.session));
-      toast({ title: "Welcome back", description: result.message || "Authentication successful." });
+      
+      // Special case for members to keep backward compatibility if other components read this key
+      if (sessionKey === 'member_admin_session' && result.session?.user?.name) {
+          localStorage.setItem('member_admin_name', result.session.user.name);
+      }
+
+      toast({ title: "Access Granted", description: result.message || "Authentication successful." });
     } else {
       toast({ variant: "destructive", title: "Access Denied", description: result.message || "Invalid credentials." });
     }
     setLoading(false);
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setSession(null);
-    localStorage.removeItem(sessionKey);
-  };
+  // If we are checking for session, show nothing or a loader
+  if (loadingInitial) return null;
 
   if (!isAuthenticated) {
     return (
@@ -67,14 +83,14 @@ const AdminAuthWrapper = ({ children, title, subtitle, sessionKey, loginLogic }:
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-400">Identity / Email</Label>
+                <Label htmlFor="identity" className="text-slate-400">{identityLabel}</Label>
                 <Input 
-                  id="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identity" 
+                  value={identity}
+                  onChange={(e) => setIdentity(e.target.value)}
                   className="bg-slate-900 border-slate-800 text-white h-12 rounded-xl focus:ring-blue-500"
-                  placeholder="Enter credentials" 
-                  required
+                  placeholder={identityLabel.includes('Email') ? "Enter credentials" : "Enter your name"}
+                  required={requireIdentity}
                 />
               </div>
               <div className="space-y-2">
@@ -98,11 +114,7 @@ const AdminAuthWrapper = ({ children, title, subtitle, sessionKey, loginLogic }:
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 pt-24">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 };
 
 export default AdminAuthWrapper;

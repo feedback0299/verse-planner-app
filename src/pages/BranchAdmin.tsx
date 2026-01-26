@@ -8,7 +8,7 @@ import {
   Plus, Search, MapPin, Phone, Trash2, 
   Loader2, Globe, Building2, Crown, Check, X
 } from 'lucide-react';
-import AdminAuthWrapper from '@/components/AdminAuthWrapper';
+
 
 const BranchAdmin = () => {
   const [branches, setBranches] = useState<ChurchBranch[]>([]);
@@ -192,12 +192,6 @@ const BranchAdmin = () => {
   };
 
   return (
-    <AdminAuthWrapper 
-      title="Branch Registry Access" 
-      subtitle="Enter password to manage church locations" 
-      loginLogic={loginLogic}
-      sessionKey="branch_admin_session"
-    >
       <div className="min-h-screen bg-slate-50 p-6 pt-24">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
@@ -358,7 +352,6 @@ const BranchAdmin = () => {
           </div>
         </div>
       </div>
-    </AdminAuthWrapper>
   );
 };
 

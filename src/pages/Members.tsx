@@ -109,12 +109,10 @@ const Members = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const session = localStorage.getItem('member_admin_session');
+    // Session is handled by wrapper, but we check for admin name which might be set by wrapper
     const storedAdmin = localStorage.getItem('member_admin_name');
-    if (session) {
-      setIsAuthenticated(true);
-      if (storedAdmin) setAdminName(storedAdmin);
-    }
+    if (storedAdmin) setAdminName(storedAdmin);
+    setIsAuthenticated(true); 
   }, []);
 
   useEffect(() => {
@@ -136,26 +134,11 @@ const Members = () => {
     setLoading(false);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'members2024') {
-      if (!adminName.trim()) {
-        toast({ variant: "destructive", title: "Wait!", description: "Please enter your name for the audit log." });
-        return;
-      }
-      setIsAuthenticated(true);
-      localStorage.setItem('member_admin_session', 'active');
-      localStorage.setItem('member_admin_name', adminName.trim());
-      toast({ title: `Welcome, ${adminName}`, description: "Identity verified successfully." });
-    } else {
-      toast({ variant: "destructive", title: "Access Denied", description: "Invalid administration credentials." });
-    }
-  };
-
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('member_admin_session');
     // We keep the name in input for convenience, but clear session
+    window.location.reload(); 
   };
 
   const validateMember = (data: any) => {
@@ -527,42 +510,7 @@ const Members = () => {
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
   const paginatedMembers = filteredMembers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-none shadow-2xl rounded-3xl overflow-hidden animate-in fade-in zoom-in duration-500">
-          <div className="bg-spiritual-blue p-8 text-white text-center">
-            <Users className="h-16 w-16 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold">Church Directory</h2>
-            <p className="text-blue-100 mt-2">Authentication required for registry access</p>
-          </div>
-          <CardContent className="p-8">
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="adminName" className="text-slate-600 font-bold ml-1">Your Name</Label>
-                <Input 
-                  id="adminName" 
-                  placeholder="e.g. Pastor John" 
-                  value={adminName} 
-                  onChange={e => setAdminName(e.target.value)} 
-                  required 
-                  className="h-12 text-lg rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all text-center" 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pass" className="text-slate-600 font-bold ml-1">Administration Key</Label>
-                <Input id="pass" type="password" value={password} onChange={e => setPassword(e.target.value)} required 
-                  className="h-12 text-lg rounded-xl bg-slate-50 border-slate-200 focus:bg-white transition-all text-center tracking-[0.5em]" />
-              </div>
-              <Button type="submit" className="w-full bg-spiritual-blue hover:bg-blue-700 transition-all font-bold py-7 text-lg rounded-2xl shadow-lg">
-                Connect to Registry
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 pt-24 px-4 pb-12">

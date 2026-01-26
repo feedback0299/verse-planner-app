@@ -15,7 +15,7 @@ import MonthlyPlanner from '@/components/MonthlyPlanner';
 import PeriodicVerseUploader from '@/components/PeriodicVerseUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
-import AdminAuthWrapper from '@/components/AdminAuthWrapper';
+
 
 // Setup pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -32,17 +32,7 @@ const MagazineAdmin = () => {
   
   const { toast } = useToast();
 
-  const loginLogic = async (email: string, pass: string) => {
-    // Special Auth for Magazine Admin - Case-insensitive and trimmed for reliability
-    if (email.trim().toLowerCase() === 'editor' && pass.trim() === 'publish') {
-      return { 
-        success: true, 
-        session: { user: { email: 'editor', name: 'Magazine Editor' } },
-        message: "Welcome Editor"
-      };
-    }
-    return { success: false, message: "Invalid credentials. Please check for spaces or capitalization." };
-  };
+
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -128,12 +118,6 @@ const MagazineAdmin = () => {
   }
 
   return (
-    <AdminAuthWrapper 
-      title="Magazine Publisher" 
-      subtitle="Authorized Studio Access" 
-      sessionKey="magazine_admin_session"
-      loginLogic={loginLogic}
-    >
       <div className="p-10 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
             <div>
@@ -367,7 +351,6 @@ const MagazineAdmin = () => {
             </TabsContent>
         </Tabs>
       </div>
-    </AdminAuthWrapper>
   );
 };
 

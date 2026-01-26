@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Coordinate Conversion</title>
+</head>
+<body>
+    <h2>Test Geographic Coordinates</h2>
+    <div id="output"></div>
+    
+    <script>
+        // Current conversion function
+        function latLongToVector3Current(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = lon * (Math.PI / 180);
+            
+            const x = -(radius * Math.sin(phi) * Math.cos(theta));
+            const y = radius * Math.cos(phi);
+            const z = radius * Math.sin(phi) * Math.sin(theta);
+            
+            return { x, y, z };
+        }
+        
+        // Alternative conversion (with different theta offset)
+        function latLongToVector3Alt(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon - 90) * (Math.PI / 180); // Try -90 offset
+            
+            const x = -(radius * Math.sin(phi) * Math.cos(theta));
+            const y = radius * Math.cos(phi);
+            const z = radius * Math.sin(phi) * Math.sin(theta);
+            
+            return { x, y, z };
+        }
+        
+        // Test locations
+        const testLocations = [
+            { name: "India (Delhi)", lat: 28.6139, lon: 77.2090 },
+            { name: "India (Mumbai)", lat: 19.0760, lon: 72.8777 },
+            { name: "USA (New York)", lat: 40.7128, lon: -74.0060 },
+            { name: "Prime Meridian", lat: 0, lon: 0 },
+            { name: "North Pole", lat: 90, lon: 0 },
+        ];
+        
+        let output = '<table border="1" style="border-collapse: collapse;"><tr><th>Location</th><th>Lat</th><th>Lon</th><th>Current (x, y, z)</th><th>Alternative (x, y, z)</th></tr>';
+        
+        testLocations.forEach(loc => {
+            const current = latLongToVector3Current(loc.lat, loc.lon, 2.03);
+            const alt = latLongToVector3Alt(loc.lat, loc.lon, 2.03);
+            output += `<tr>
+                <td>${loc.name}</td>
+                <td>${loc.lat.toFixed(2)}</td>
+                <td>${loc.lon.toFixed(2)}</td>
+                <td>x:${current.x.toFixed(2)}, y:${current.y.toFixed(2)}, z:${current.z.toFixed(2)}</td>
+                <td>x:${alt.x.toFixed(2)}, y:${alt.y.toFixed(2)}, z:${alt.z.toFixed(2)}</td>
+            </tr>`;
+        });
+        
+        output += '</table>';
+        document.getElementById('output').innerHTML = output;
+        
+        console.log("Test coordinates generated. Check if India should have specific x,z patterns vs USA.");
+    </script>
+</body>
+</html>

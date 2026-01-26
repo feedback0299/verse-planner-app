@@ -10,7 +10,6 @@ import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from 'react-router-dom';
-import AdminAuthWrapper from '@/components/AdminAuthWrapper';
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
@@ -19,16 +18,7 @@ const Admin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const loginLogic = async (email: string, pass: string) => {
-    if (email === 'admin' && pass === 'admin') {
-      return { 
-        success: true, 
-        session: { user: { email: 'admin', name: 'Church Admin' } },
-        message: "Welcome Admin"
-      };
-    }
-    return { success: false };
-  };
+
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -79,12 +69,6 @@ const Admin = () => {
   };
 
   return (
-    <AdminAuthWrapper
-      title="Admin Dashboard"
-      subtitle="Management Interface"
-      sessionKey="admin_session"
-      loginLogic={loginLogic}
-    >
       <div className="p-18 max-w-7xl mx-auto space-y-10">
         {/* Dashboard Header */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -309,7 +293,6 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminAuthWrapper>
   );
 };
 
