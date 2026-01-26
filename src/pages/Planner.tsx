@@ -8,6 +8,7 @@ import { supabase } from '@/lib/dbService/supabase';
 import { Loader2, CheckCircle2, Calendar, Trophy, User, Clock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ChallengeCalendar from '@/components/ChallengeCalendar';
 
 const Planner = () => {
   const { toast } = useToast();
@@ -92,8 +93,12 @@ const Planner = () => {
   // Mutation: Check-in with Optimistic Updates
   const checkInMutation = useMutation({
     mutationFn: async (day: number) => {
+      // Calculate new state based on current
+      const currentVal = progress[day - 1];
+      const newVal = currentVal === '1' ? '0' : '1';
+      
       const newMask = progress.split('');
-      newMask[day - 1] = '1';
+      newMask[day - 1] = newVal;
       const updatedMask = newMask.join('');
 
       const { error } = await supabase
@@ -111,8 +116,12 @@ const Planner = () => {
       await queryClient.cancelQueries({ queryKey: ['plannerProgress', profile?.id] });
       const previousProgress = queryClient.getQueryData(['plannerProgress', profile?.id]);
       
-      const newMask = (previousProgress as string || '0'.repeat(70)).split('');
-      newMask[day - 1] = '1';
+      const currentString = (previousProgress as string || '0'.repeat(70));
+      const currentVal = currentString[day - 1];
+      const newVal = currentVal === '1' ? '0' : '1';
+
+      const newMask = currentString.split('');
+      newMask[day - 1] = newVal;
       queryClient.setQueryData(['plannerProgress', profile?.id], newMask.join(''));
       
       return { previousProgress };
@@ -234,7 +243,8 @@ const Planner = () => {
           </Card>
         </div>
 
-        {/* Main Tabs */}
+
+        {/* Calendar View */}
         <Tabs defaultValue={profile?.category || "adult"} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8 bg-white p-1 rounded-xl shadow-inner border max-w-md mx-auto">
             <TabsTrigger value="kids_teens" className="rounded-lg data-[state=active]:bg-spiritual-blue data-[state=active]:text-white">
@@ -244,73 +254,28 @@ const Planner = () => {
               Adults (Above 18)
             </TabsTrigger>
           </TabsList>
-
-          {['kids_teens', 'adult'].map((cat) => (
-            <TabsContent key={cat} value={cat} className="space-y-4">
-              <div className="bg-white rounded-2xl shadow-md border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-slate-50 border-b">
-                      <tr>
-                        <th className="px-6 py-4 font-semibold text-gray-700 w-24">Day</th>
-                        <th className="px-6 py-4 font-semibold text-gray-700 w-32 text-center">Status</th>
-                        {cat === 'adult' && <th className="px-6 py-4 font-semibold text-gray-700">Old Testament / பழைய ஏற்பாடு</th>}
-                        <th className="px-6 py-4 font-semibold text-gray-700">Psalms / சங்கீதம்</th>
-                        <th className="px-6 py-4 font-semibold text-gray-700">Proverbs / நீதிமொழிகள்</th>
-                        <th className="px-6 py-4 font-semibold text-gray-700">New Testament / NT</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {readings.filter(r => r.category === cat).map((data) => (
-                        <tr 
-                          key={`${data.day}-${data.category}`} 
-                          className={`border-b transition-colors ${
-                            data.day === currentDay ? 'bg-spiritual-blue/5' : 
-                            data.day < currentDay ? 'bg-slate-50/50' : 'bg-white'
-                          }`}
-                        >
-                          <td className="px-6 py-4 font-bold text-gray-500">Day {data.day}</td>
-                          <td className="px-6 py-4 text-center">
-                            <div className="flex justify-center">
-                              {data.day === currentDay ? (
-                                checkInMutation.isPending && checkInMutation.variables === data.day ? (
-                                  <Loader2 className="w-6 h-6 animate-spin text-spiritual-blue" />
-                                ) : (
-                                  <Checkbox 
-                                    checked={isCompleted(data.day)} 
-                                    onCheckedChange={() => checkInMutation.mutate(data.day)}
-                                    disabled={isCompleted(data.day) || checkInMutation.isPending}
-                                    className="w-6 h-6 border-2 border-spiritual-blue data-[state=checked]:bg-spiritual-blue shadow-sm"
-                                  />
-                                )
-                              ) : (
-                                isCompleted(data.day) ? (
-                                  <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                ) : (
-                                  <Checkbox 
-                                    disabled
-                                    className="w-6 h-6 border-2 border-gray-200 bg-gray-50 opacity-30 cursor-not-allowed"
-                                  />
-                                )
-                              )}
-                            </div>
-                          </td>
-                          {cat === 'adult' && (
-                            <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>
-                              {data.old_testament}
-                            </td>
-                          )}
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.psalms}</td>
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.proverbs}</td>
-                          <td className={`px-6 py-4 text-sm ${data.day > currentDay ? 'text-gray-400 opacity-50' : 'text-gray-900'}`}>{data.new_testament}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </TabsContent>
-          ))}
+          
+          <TabsContent value="kids_teens">
+             <ChallengeCalendar 
+                startDate={START_DATE}
+                progress={progress}
+                readings={readings}
+                onCheckIn={(day) => checkInMutation.mutate(day)}
+                isCheckingIn={checkInMutation.isPending}
+                userCategory="kids_teens"
+             />
+          </TabsContent>
+          
+          <TabsContent value="adult">
+             <ChallengeCalendar 
+                startDate={START_DATE}
+                progress={progress}
+                readings={readings}
+                onCheckIn={(day) => checkInMutation.mutate(day)}
+                isCheckingIn={checkInMutation.isPending}
+                userCategory="adult"
+             />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

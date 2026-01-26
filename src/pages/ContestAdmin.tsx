@@ -8,12 +8,16 @@ import { supabase } from '@/lib/dbService/supabase';
 import { Loader2, Upload, Calendar as CalendarIcon, FileSpreadsheet, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSunday, isSameMonth, addMonths, getDay } from 'date-fns';
-import AdminAuthWrapper from '@/components/AdminAuthWrapper';
+
+import ContestGraph from '@/components/ContestGraph';
+import ContestTimeline from '@/components/ContestTimeline';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ContestAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [readings, setReadings] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState('timeline');
   const { toast } = useToast();
 
   const fetchReadings = async () => {
@@ -114,52 +118,75 @@ const ContestAdmin = () => {
     reader.readAsBinaryString(file);
   };
 
-  const loginLogic = async (email: string, pass: string) => {
-    if (email === 'admin' && pass === 'admin') {
-      return { 
-        success: true, 
-        session: { user: { email: 'admin', name: 'Church Admin' } },
-        message: "Welcome Admin"
-      };
+
+
+
+
+  // Sample data for participant graph
+  const generateSampleParticipants = () => {
+    const participants = [];
+    const names = [
+      'John Doe', 'Jane Smith', 'Michael Johnson', 'Sarah Williams', 'David Brown',
+      'Emily Davis', 'James Wilson', 'Mary Garcia', 'Robert Martinez', 'Patricia Rodriguez',
+      'William Anderson', 'Jennifer Taylor', 'Richard Thomas', 'Linda Moore', 'Charles Jackson',
+      'Barbara White', 'Joseph Harris', 'Susan Martin', 'Thomas Thompson', 'Jessica Lee',
+      'Christopher Allen', 'Karen Young', 'Daniel King', 'Nancy Wright', 'Matthew Lopez',
+      'Betty Hill', 'Mark Scott', 'Margaret Green', 'Donald Adams', 'Lisa Baker',
+      'Paul Nelson', 'Sandra Carter', 'Andrew Mitchell', 'Ashley Roberts', 'Joshua Turner',
+      'Kimberly Phillips', 'Kenneth Campbell', 'Donna Parker', 'Kevin Evans', 'Michelle Edwards',
+      'Steven Collins', 'Carol Stewart', 'Brian Morris', 'Amanda Nguyen', 'George Murphy',
+      'Melissa Rivera', 'Edward Cooper', 'Deborah Bailey', 'Ronald Reed', 'Stephanie Cook',
+      'Timothy Morgan', 'Rebecca Bell', 'Jason Murphy', 'Laura Wood', 'Jeffrey Barnes',
+      'Sharon Ross', 'Ryan Henderson', 'Cynthia Coleman', 'Jacob Jenkins', 'Kathleen Perry',
+      'Gary Powell', 'Amy Long', 'Nicholas Patterson', 'Shirley Hughes', 'Eric Flores',
+      'Angela Washington', 'Stephen Butler', 'Helen Simmons', 'Jonathan Foster', 'Anna Gonzales'
+    ];
+
+    const startDate = new Date(2026, 1, 1); // Feb 1, 2026 - Contest start
+
+    // Generate participants with varying density
+    for (let i = 0; i < 70; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Varying participation: more at beginning, some days with multiple, some with none
+      let count = 0;
+      if (i < 10) {
+        // First 10 days: high activity (2-5 participants)
+        count = Math.floor(Math.random() * 4) + 2;
+      } else if (i < 30) {
+        // Days 10-30: moderate activity (0-3 participants)
+        count = Math.random() > 0.3 ? Math.floor(Math.random() * 3) + 1 : 0;
+      } else if (i < 50) {
+        // Days 30-50: lower activity (0-2 participants)
+        count = Math.random() > 0.5 ? Math.floor(Math.random() * 2) + 1 : 0;
+      } else {
+        // Days 50-70: sporadic activity (0-1 participants)
+        count = Math.random() > 0.7 ? 1 : 0;
+      }
+
+      // Add participants for this day
+      for (let j = 0; j < count; j++) {
+        const nameIndex = (i * 3 + j) % names.length;
+        participants.push({
+          name: names[nameIndex],
+          joinDate: dateStr
+        });
+      }
     }
-    return { success: false };
+
+    return participants;
   };
 
-  // Calendar Logic for Feb, Mar, Apr 2026
-  const months = [
-    new Date(2026, 1, 1), // Feb
-    new Date(2026, 2, 1), // Mar
-    new Date(2026, 3, 1), // Apr
-  ];
-
-  const getDayInfo = (date: Date) => {
-    // Calculate Contest Day
-    const contestStart = new Date(2026, 1, 1);
-    const diffTime = date.getTime() - contestStart.getTime();
-    const dayNum = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    if (dayNum < 1 || dayNum > 70) return null;
-
-    const kidsPortion = readings.find(r => r.day === dayNum && r.category === 'kids_teens');
-    const adultPortion = readings.find(r => r.day === dayNum && r.category === 'adult');
-
-    const timing = isSunday(date) 
-      ? "Sun: After 14:00 (After 3rd Service)" 
-      : "Mon-Sat: 12:00 - 14:00";
-
-    return { dayNum, kidsPortion, adultPortion, timing };
-  };
+  const sampleParticipants = generateSampleParticipants();
+  const contestStartDate = '2026-02-01';
 
   // Weekday labels
-  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 
   return (
-    <AdminAuthWrapper
-      title="70-Day Contest Manager"
-      subtitle="Excel Upload & Portion Scheduling"
-      sessionKey="admin_session"
-      loginLogic={loginLogic}
-    >
+
       <div className="p-8 max-w-7xl mx-auto space-y-10">
         {/* Premium Import Section */}
         <div className="relative group">
@@ -238,116 +265,42 @@ const ContestAdmin = () => {
           </Card>
         </div>
 
-        {/* Calendar Section */}
-        <div className="space-y-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-              <CalendarIcon className="text-spiritual-blue w-8 h-8" />
-              Contest Timeline
-              <span className="text-lg font-medium text-slate-400 ml-2">Feb - Apr 2026</span>
-            </h2>
-          </div>
+        {/* Tabs Section */}
+        <div className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                <CalendarIcon className="text-spiritual-blue w-8 h-8" />
+                Contest Overview
+                <span className="text-lg font-medium text-slate-400 ml-2">Feb - Apr 2026</span>
+              </h2>
+              <TabsList className="bg-slate-100">
+                <TabsTrigger value="timeline" className="data-[state=active]:bg-spiritual-blue data-[state=active]:text-white">
+                  Contest Timeline
+                </TabsTrigger>
+                <TabsTrigger value="participants" className="data-[state=active]:bg-spiritual-blue data-[state=active]:text-white">
+                  Participant Progress
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <div className="space-y-16">
-            {months.map((monthDate) => {
-              const start = startOfMonth(monthDate);
-              const end = endOfMonth(monthDate);
-              const days = eachDayOfInterval({ start, end });
-              const emptyDays = getDay(start);
-              
-              return (
-                <div key={monthDate.toString()} className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <h3 className="text-2xl font-bold text-spiritual-blue min-w-[200px]">
-                      {format(monthDate, 'MMMM yyyy')}
-                    </h3>
-                    <div className="h-px bg-slate-200 flex-1"></div>
-                  </div>
-                  
-                  <div className="grid grid-cols-7 gap-3">
-                    {/* Weekday Headers */}
-                    {WEEKDAYS.map(day => (
-                      <div key={day} className="text-center text-xs font-black text-slate-400 uppercase tracking-[0.2em] pb-4">
-                        {day}
-                      </div>
-                    ))}
+            {/* Timeline Tab */}
+            <TabsContent value="timeline" className="mt-0">
+               <ContestTimeline readings={readings} />
+            </TabsContent>
 
-                    {/* Empty Padding Cells */}
-                    {Array.from({ length: emptyDays }).map((_, i) => (
-                      <div key={`empty-${i}`} className="min-h-[140px] rounded-2xl bg-slate-50/50 border border-dashed border-slate-100/50" />
-                    ))}
-
-                    {/* Actual Days */}
-                    {days.map((date) => {
-                      const info = getDayInfo(date);
-                      const isSun = isSunday(date);
-
-                      if (!info) return (
-                        <div key={date.toString()} className="min-h-[140px] p-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 flex flex-col items-center justify-center text-center group">
-                          <span className="text-slate-300 font-bold text-xl group-hover:text-slate-400 transition-colors">{format(date, 'd')}</span>
-                          <span className="text-[10px] text-slate-300 font-medium uppercase tracking-tighter mt-1">N/A</span>
-                        </div>
-                      );
-
-                      return (
-                        <Card key={date.toString()} className={`min-h-[160px] flex flex-col overflow-hidden group hover:shadow-xl transition-all duration-300 border-slate-200 hover:border-spiritual-blue/30 ${isSun ? 'ring-2 ring-spiritual-gold/10' : ''}`}>
-                          <div className={`px-3 py-2 border-b flex justify-between items-center ${isSun ? 'bg-spiritual-gold/5' : 'bg-slate-50/50'}`}>
-                            <span className={`font-black text-xl ${isSun ? 'text-spiritual-gold' : 'text-slate-900'}`}>{format(date, 'd')}</span>
-                            <div className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isSun ? 'bg-spiritual-gold text-white' : 'bg-spiritual-blue text-white'}`}>
-                              DAY {info.dayNum}
-                            </div>
-                          </div>
-                          <div className="p-3 flex-1 flex flex-col justify-between gap-3">
-                            <div className="space-y-4">
-                                <div className="space-y-1.5">
-                                  <p className="text-[8px] font-black text-blue-600 uppercase tracking-wider">Kids & Teens</p>
-                                  <div className="grid grid-cols-1 gap-1">
-                                    <div className="text-[10px] bg-blue-50/50 p-1.5 rounded border border-blue-100/50">
-                                      <span className="font-bold text-blue-700">Psalms:</span> {info.kidsPortion?.psalms || "—"}
-                                    </div>
-                                    <div className="text-[10px] bg-blue-50/50 p-1.5 rounded border border-blue-100/50">
-                                      <span className="font-bold text-blue-700">Prov/NT:</span> {info.kidsPortion ? `${info.kidsPortion.proverbs}, ${info.kidsPortion.new_testament}` : "—"}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                  <p className="text-[8px] font-black text-spiritual-gold uppercase tracking-wider">Adults</p>
-                                  <div className="grid grid-cols-1 gap-1">
-                                    {info.adultPortion?.old_testament && (
-                                      <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
-                                        <span className="font-bold text-spiritual-gold">OT:</span> {info.adultPortion.old_testament}
-                                      </div>
-                                    )}
-                                    <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
-                                      <span className="font-bold text-spiritual-gold">Psalms:</span> {info.adultPortion?.psalms || "—"}
-                                    </div>
-                                    <div className="text-[10px] bg-orange-50/50 p-1.5 rounded border border-orange-100/50">
-                                      <span className="font-bold text-spiritual-gold">Prov/NT:</span> {info.adultPortion ? `${info.adultPortion.proverbs}, ${info.adultPortion.new_testament}` : "—"}
-                                    </div>
-                                  </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity mt-2">
-                               <div className={`w-1.5 h-1.5 rounded-full ${isSun ? 'bg-spiritual-gold' : 'bg-spiritual-blue'}`}></div>
-                               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
-                                 {isSun ? "After 14:00" : "12:00 - 14:00"}
-                               </p>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* Participants Tab */}
+            <TabsContent value="participants" className="mt-0">
+              <ContestGraph 
+                startDate={contestStartDate}
+                participants={sampleParticipants}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </AdminAuthWrapper>
   );
 };
+
 
 export default ContestAdmin;

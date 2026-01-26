@@ -23,6 +23,7 @@ const Navigation = () => {
   const [isPublisherLoggedIn, setIsPublisherLoggedIn] = useState(false);
   const [isBranchAdminLoggedIn, setIsBranchAdminLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isAdminPortalExpanded, setIsAdminPortalExpanded] = useState(false);
 
   const languages = [
     { code: 'ta', label: '🇮🇳 TAMIL தமிழ்' },
@@ -318,8 +319,18 @@ const Navigation = () => {
             {/* Admin Portal Section */}
             {(isAdminLoggedIn || isPublisherLoggedIn || isBranchAdminLoggedIn || (!user && !isAdminLoggedIn && !isPublisherLoggedIn && !isBranchAdminLoggedIn)) && (
               <div className="border-t pt-4 mt-4">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-3">Admin Portal</p>
+                {/* Collapsible Header */}
+                <button 
+                  onClick={() => setIsAdminPortalExpanded(!isAdminPortalExpanded)}
+                  className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Portal</p>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isAdminPortalExpanded ? 'rotate-180' : ''}`} />
+                </button>
                 
+                {/* Collapsible Content */}
+                {isAdminPortalExpanded && (
+                  <div className="mt-2">
                 {!isAdminLoggedIn && !isPublisherLoggedIn && !isBranchAdminLoggedIn && (
                   <>
                     <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)}>
@@ -400,6 +411,8 @@ const Navigation = () => {
                       </div>
                     </Link>
                   </>
+                )}
+                  </div>
                 )}
               </div>
             )}

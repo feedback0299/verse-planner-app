@@ -14,6 +14,7 @@ import Members from "@/pages/Members";
 import MonthlyPlanner from "@/components/MonthlyPlanner";
 import VideoRoom from "./pages/VideoRoom";
 import WorldMap from "./pages/WorldMap";
+import Globe3D from "./pages/Globe3D";
 import BranchAdmin from "./pages/BranchAdmin";
 import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -22,6 +23,9 @@ import Login from "@/pages/Login";
 import Planner from "@/pages/Planner";
 import ContestAdmin from "@/pages/ContestAdmin";
 import NotFound from "@/pages/NotFound";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminAuthWrapper from "@/components/AdminAuthWrapper";
+import { authConfig } from "@/config/authConfig";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,19 +49,72 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/members" element={<Members />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/magazine-admin" element={<MagazineAdmin />} />
+        <Route path="/members" element={
+          <AdminAuthWrapper 
+            title="Church Directory" 
+            subtitle="Authentication required for registry access" 
+            sessionKey="member_admin_session"
+            loginLogic={authConfig.members}
+            identityLabel="Your Name"
+          >
+            <Members />
+          </AdminAuthWrapper>
+        } />
+        <Route path="/admin" element={
+          <AdminAuthWrapper 
+            title="Admin Dashboard" 
+            subtitle="Management Interface" 
+            sessionKey="admin_session"
+            loginLogic={authConfig.admin}
+          >
+            <Admin />
+          </AdminAuthWrapper>
+        } />
+        <Route path="/magazine-admin" element={
+          <AdminAuthWrapper 
+            title="Magazine Publisher" 
+            subtitle="Authorized Studio Access" 
+            sessionKey="magazine_admin_session"
+            loginLogic={authConfig.magazine}
+          >
+            <MagazineAdmin />
+          </AdminAuthWrapper>
+        } />
         <Route path="/super-admin" element={<SuperAdmin />} />
         <Route path="/magazine" element={<Magazine />} />
         <Route path="/admin/planner" element={<div className="pt-16"><MonthlyPlanner /></div>} />
         <Route path="/room/:roomId" element={<VideoRoom />} />
         <Route path="/map" element={<WorldMap />} />
-        <Route path="/branches" element={<BranchAdmin />} />
+        {/* <Route path="/globe" element={<Globe3D />} /> */}
+        <Route path="/branches" element={
+          <AdminAuthWrapper 
+            title="Branch Registry Access" 
+            subtitle="Enter password to manage church locations" 
+            sessionKey="branch_admin_session"
+            loginLogic={authConfig.branch}
+            identityLabel="Email (Optional)"
+            requireIdentity={false}
+          >
+            <BranchAdmin />
+          </AdminAuthWrapper>
+        } />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/planner" element={<Planner />} />
-        <Route path="/admin/contest" element={<ContestAdmin />} />
+        <Route path="/planner" element={
+          <ProtectedRoute>
+            <Planner />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/contest" element={
+           <AdminAuthWrapper 
+            title="70-Day Contest Manager" 
+            subtitle="Excel Upload & Portion Scheduling" 
+            sessionKey="admin_session"
+            loginLogic={authConfig.admin}
+          >
+            <ContestAdmin />
+          </AdminAuthWrapper>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
