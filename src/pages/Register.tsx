@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/dbService/supabase';
-import { Loader2, UserPlus, Phone, Mail, Lock, User, MapPin, CheckCircle2, Globe, Building2 } from 'lucide-react';
+import { Loader2, UserPlus, Phone, Mail, Lock, User, MapPin, CheckCircle2, Globe, Building2, Church } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
@@ -20,6 +20,8 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     city: '',
+    churchBranchType: 'main',
+    customBranch: '',
     participationMode: 'online',
     attendanceFrequency: 'daily',
     onlineRegularity: 'yes',
@@ -127,6 +129,8 @@ const Register = () => {
           phone_number: formData.phone,
           email: formData.email,
           city_location: formData.city,
+          church_branch: formData.churchBranchType === 'main' ? '1' : '2',
+          church_branch_name: formData.churchBranchType === 'branch' ? formData.customBranch : null,
           participation_mode: formData.participationMode,
           attendance_frequency: formData.participationMode === 'offline' ? formData.attendanceFrequency : null,
           online_regularity: formData.participationMode === 'online' ? formData.onlineRegularity : null,
@@ -227,12 +231,71 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="city">City / Location</Label>
+                <Label htmlFor="city">Personal Address / City</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Textarea id="city" name="city" placeholder="Your city or address" className="pl-10 min-h-[80px]" value={formData.city} onChange={handleChange} />
+                  <Textarea 
+                    id="city" 
+                    name="city" 
+                    placeholder="Enter your full personal address" 
+                    className="pl-10 min-h-[80px]" 
+                    required 
+                    value={formData.city} 
+                    onChange={handleChange} 
+                  />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Select your Branch</Label>
+                <RadioGroup 
+                  defaultValue="main" 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  onValueChange={(v) => {
+                    handleRadioChange('churchBranchType', v);
+                  }}
+                >
+                  <div>
+                    <RadioGroupItem value="main" id="loc-main" className="peer sr-only" />
+                    <Label
+                      htmlFor="loc-main"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-spiritual-blue [&:has([data-state=checked])]:border-spiritual-blue cursor-pointer"
+                    >
+                      <Building2 className="mb-3 h-6 w-6" />
+                      Athumanesar Thanjavur Main
+                    </Label>
+                  </div>
+                  <div>
+                    <RadioGroupItem value="branch" id="loc-branch" className="peer sr-only" />
+                    <Label
+                      htmlFor="loc-branch"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-spiritual-blue [&:has([data-state=checked])]:border-spiritual-blue cursor-pointer"
+                    >
+                      <MapPin className="mb-3 h-6 w-6" />
+                      Athumanesar Branch
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+               {/* Conditional Branch Name Input */}
+               {formData.churchBranchType === 'branch' && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <Label htmlFor="branchName">Branch Name</Label>
+                    <div className="relative">
+                       <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                       <Input 
+                        id="branchName" 
+                        name="customBranch"
+                        placeholder="Enter Branch Name (e.g. Kumbakonam)" 
+                        className="pl-10" 
+                        value={formData.customBranch} 
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </div>
+               )}
 
               <div className="space-y-4 pt-2">
                 <Label className="text-base font-semibold">How will you participate?</Label>
@@ -247,7 +310,7 @@ const Register = () => {
                       htmlFor="offline"
                       className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-spiritual-blue [&:has([data-state=checked])]:border-spiritual-blue cursor-pointer"
                     >
-                      <Building2 className="mb-3 h-6 w-6" />
+                      <Church className="mb-3 h-6 w-6" />
                       Offline (At Church)
                     </Label>
                   </div>
