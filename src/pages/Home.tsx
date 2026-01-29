@@ -196,7 +196,7 @@ const Home = () => {
             
             <div className="pt-4 flex flex-col items-center md:items-start gap-3">
               <div className="bg-white p-3 rounded-2xl shadow-xl hover:scale-105 transition-transform">
-                  <QRCode value={window.location.origin} size={120} />
+                  <QRCode value="https://preview--verse-planner-app.lovable.app/login" size={120} />
               </div>
               <p className="text-xs text-spiritual-gold/70 font-medium">{t('home.scanMobilePortal')}</p>
             </div>
