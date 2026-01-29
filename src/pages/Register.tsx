@@ -53,6 +53,19 @@ const Register = () => {
     return !!data;
   };
 
+  const handleEmailBlur = async () => {
+    if (!formData.email || !formData.email.includes('@')) return;
+    
+    const exists = await checkEmailExists(formData.email);
+    if (exists) {
+      toast({
+        variant: "destructive",
+        title: "Email exists",
+        description: "This email address is already registered.",
+      });
+    }
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -71,6 +84,15 @@ const Register = () => {
         variant: "destructive",
         title: "Passwords mismatch",
         description: "Password and Confirm Password must match.",
+      });
+      return;
+    }
+
+    if (formData.churchBranchType === 'branch' && !formData.customBranch.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Branch Name Required",
+        description: "Please specify the name of your Athumanesar Branch.",
       });
       return;
     }
@@ -208,7 +230,17 @@ const Register = () => {
                   <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="email" name="email" type="email" placeholder="john@example.com" className="pl-10" required value={formData.email} onChange={handleChange} />
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email" 
+                      placeholder="john@example.com" 
+                      className="pl-10" 
+                      required 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      onBlur={handleEmailBlur}
+                    />
                   </div>
                 </div>
               </div>
