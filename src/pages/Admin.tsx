@@ -6,94 +6,40 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, FileSpreadsheet, ShieldCheck, Calendar as CalendarIcon, LogOut } from 'lucide-react';
+import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, FileSpreadsheet, ShieldCheck, Calendar as CalendarIcon, LogOut, Download as DownloadIcon, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { generateReadingPDF, getReadingPdfBlobUrl, generateAttendancePDF, getAttendancePdfBlobUrl } from '@/lib/utils/portionPdfUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Eye } from 'lucide-react';
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
-  const [events, setEvents] = useState<any[]>([]);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', location: '', description: '' });
   const { toast } = useToast();
   const navigate = useNavigate();
   
 
 
-  const fetchEvents = async () => {
-    try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('date', { ascending: true });
-        
-        if (error) {
-            if (error.code === 'PGRST205') {
-                 console.log("Events table not found. Create it to use the events feature.");
-                 setEvents([]);
-                 return;
-            }
-            console.error('Error fetching events:', error);
-        }
-        else setEvents(data || []);
-    } catch (e) {
-        console.error("Fetch Exception:", e);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-    fetchParticipants();
-  }, []);
-
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase
-      .from('events')
-      .insert([newEvent]);
-
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Event created successfully.",
-      });
-      setNewEvent({ title: '', date: '', time: '', location: '', description: '' });
-      fetchEvents();
-    }
-    setLoading(false);
-  };
-
-  const handleDeleteEvent = async (id: number) => {
-      const { error } = await supabase.from('events').delete().match({ id });
-      if (error) {
-          toast({ variant: "destructive", title: "Error", description: error.message });
-      } else {
-          toast({ title: "Deleted", description: "Event removed." });
-          fetchEvents();
-      }
-  };
-
-  /* New State for Participants */
-  /* New State for Participants */
+  /* State for Participants */
   const [participants, setParticipants] = useState<any[]>([]);
   const [editingParticipant, setEditingParticipant] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [branchOption, setBranchOption] = useState('main'); // 'main' | 'branch'
   const [customBranch, setCustomBranch] = useState('');
+  const [editAddress, setEditAddress] = useState('');
 
   /* Filter & Pagination State */
   const [filterInput, setFilterInput] = useState({ name: '', phone: '', branchType: 'all', mode: 'all' });
   const [appliedFilters, setAppliedFilters] = useState({ name: '', phone: '', branchType: 'all', mode: 'all' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    fetchParticipants();
+    fetchContestReadings();
+  }, []);
 
   const handleSearch = () => {
     setAppliedFilters(filterInput);
@@ -131,43 +77,80 @@ const Admin = () => {
   const paginatedParticipants = filteredParticipants.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const fetchParticipants = async () => {
-    // Fetch profiles and join with contest_progress to get participation stats
-    // Note: Assuming foreign key relationship exists or we filter manually.
-    // If no direct FK for Select *, we fetch both and map.
-    
-    // Attempt with relational select if FK exists: .select('*, contest_progress(progress_mask)')
-    // If not, we do two queries.
-    const { data: profiles, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (profileError) {
-      console.error("Error fetching profiles", profileError);
-      return;
+      if (profileError) throw profileError;
+
+      const { data: progress, error: progressError } = await supabase
+          .from('contest_progress')
+          .select('user_id, progress_mask');
+
+      if (progressError) console.error("Error fetching progress", progressError);
+
+      // Merge data
+      const merged = profiles?.map(p => {
+          const prog = progress?.find(pr => pr.user_id === p.id);
+          const daysParticipated = prog && prog.progress_mask 
+              ? prog.progress_mask.split('').filter((c: string) => c === '1').length 
+              : 0;
+          return { ...p, daysParticipated };
+      }) || [];
+
+      setParticipants(merged);
+    } catch (err) {
+      console.error("Error fetching participants:", err);
+      setParticipants([]);
     }
-
-    const { data: progress, error: progressError } = await supabase
-        .from('contest_progress')
-        .select('user_id, progress_mask');
-
-    if (progressError) console.error("Error fetching progress", progressError);
-
-    // Merge data
-    const merged = profiles?.map(p => {
-        const prog = progress?.find(pr => pr.user_id === p.id);
-        const daysParticipated = prog && prog.progress_mask 
-            ? prog.progress_mask.split('').filter((c: string) => c === '1').length 
-            : 0;
-        return { ...p, daysParticipated };
-    }) || [];
-
-    setParticipants(merged);
   };
 
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState("PDF Preview");
 
+  const handlePreview = async (category: 'kids_teens' | 'adult', type: 'portion' | 'attendance' = 'portion') => {
+    const data = contestReadings.filter(r => r.category === category);
+    if (data.length > 0) {
+      setPreviewPdfUrl(null);
+      setPreviewTitle(type === 'portion' ? "Reading Portion Preview" : "Attendance Sheet Preview");
+      setIsPreviewOpen(true);
+      
+      // Use setTimeout to allow the dialog to open with a loader before the heavy PDF generation starts
+      setTimeout(() => {
+        try {
+          const url = type === 'portion' 
+            ? getReadingPdfBlobUrl(data, category)
+            : getAttendancePdfBlobUrl(data, category);
+          setPreviewPdfUrl(url);
+        } catch (err) {
+          console.error("PDF Preview Error:", err);
+          toast({ 
+            variant: "destructive", 
+            title: "Preview Failed", 
+            description: "An error occurred while generating the PDF preview." 
+          });
+          setIsPreviewOpen(false);
+        }
+      }, 100);
+    }
+  };
 
-  const [editAddress, setEditAddress] = useState('');
+  const [contestReadings, setContestReadings] = useState<any[]>([]);
+  const fetchContestReadings = async () => {
+    const { data, error } = await supabase
+      .from('contest_readings')
+      .select('*')
+      .order('day', { ascending: true });
+    
+    if (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to fetch reading portions." });
+    } else {
+      setContestReadings(data || []);
+    }
+  };
 
   const handleEditParticipant = (participant: any) => {
     setEditingParticipant(participant);
@@ -320,9 +303,9 @@ const Admin = () => {
 
         <Tabs defaultValue="participants" className="w-full">
           <div className="overflow-x-auto pb-4 no-scrollbar">
-            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-4 mb-2 bg-slate-100/50 p-1.5 rounded-2xl border min-w-full">
+            <TabsList className="inline-flex w-auto md:grid md:w-full md:grid-cols-5 mb-2 bg-slate-100/50 p-1.5 rounded-2xl border min-w-full">
                 <TabsTrigger value="participants" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-spiritual-blue text-slate-500 font-bold py-3 px-6 whitespace-nowrap">Participants</TabsTrigger>
-                <TabsTrigger value="events" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-spiritual-blue text-slate-500 font-bold py-3 px-6 whitespace-nowrap">Church Events</TabsTrigger>
+                <TabsTrigger value="portions" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-spiritual-blue text-slate-500 font-bold py-3 px-6 whitespace-nowrap">Reading Portions</TabsTrigger>
                 <TabsTrigger value="verses" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-spiritual-blue text-slate-500 font-bold py-3 px-6 whitespace-nowrap">Daily Verses</TabsTrigger>
                 <TabsTrigger value="meetings" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-spiritual-blue text-slate-500 font-bold py-3 px-6 whitespace-nowrap">Meetings</TabsTrigger>
             </TabsList>
@@ -594,85 +577,116 @@ const Admin = () => {
              )}
           </TabsContent>
 
-          <TabsContent value="events" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-            <div className="grid lg:grid-cols-5 gap-8">
-              <div className="lg:col-span-2">
-                <Card className="border-t-4 border-t-green-500 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Add New Church Event</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleCreateEvent} className="space-y-4">
-                      <div>
-                        <Label className="text-slate-600">Event Title</Label>
-                        <Input placeholder="e.g. Sunday Morning Worship" value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} required className="mt-1" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-slate-600">Date</Label>
-                          <Input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} required className="mt-1" />
-                        </div>
-                        <div>
-                          <Label className="text-slate-600">Time</Label>
-                          <Input type="time" value={newEvent.time} onChange={e => setNewEvent({...newEvent, time: e.target.value})} required className="mt-1" />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-slate-600">Location</Label>
-                        <Input placeholder="Church Sanctuary" value={newEvent.location} onChange={e => setNewEvent({...newEvent, location: e.target.value})} required className="mt-1" />
-                      </div>
-                      <div>
-                        <Label className="text-slate-600">Brief Description</Label>
-                        <Input placeholder="Optional additional details" value={newEvent.description} onChange={e => setNewEvent({...newEvent, description: e.target.value})} className="mt-1" />
-                      </div>
-                      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 py-6 text-lg font-bold shadow-lg shadow-green-600/20" disabled={loading}>
-                        {loading ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2" />} Create Event
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="lg:col-span-3">
-                <Card className="shadow-md">
-                  <CardHeader className="border-b bg-slate-50/50">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      Existing Events
-                      <span className="text-xs font-bold bg-slate-200 px-3 py-1 rounded-full text-slate-600">{events.length} Active</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="divide-y max-h-[600px] overflow-y-auto">
-                      {events.length === 0 ? (
-                        <div className="p-20 text-center space-y-2">
-                           <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                             <CalendarIcon className="w-8 h-8" />
-                           </div>
-                           <p className="text-slate-400 font-medium">No events scheduled yet.</p>
-                        </div>
-                      ) : (
-                        events.map(event => (
-                          <div key={event.id} className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
-                            <div className="space-y-1">
-                              <p className="font-bold text-slate-900 text-lg">{event.title}</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
-                                <span className="flex items-center gap-1.5"><CalendarIcon className="w-3.5 h-3.5" /> {event.date}</span>
-                                <span className="text-slate-300">|</span>
-                                <span className="flex items-center gap-1.5 font-bold text-spiritual-blue uppercase tracking-tighter text-xs">At {event.time}</span>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="icon" className="text-slate-300 hover:text-red-500 transition-colors" onClick={() => handleDeleteEvent(event.id)}>
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
+          <TabsContent value="portions" className="animate-in fade-in slide-in-from-bottom-2">
+            <Card className="shadow-md border border-slate-200 overflow-hidden">
+              <CardHeader className="bg-slate-50/50 p-6 border-b">
+                <CardTitle className="text-xl flex items-center gap-3">
+                  <FileSpreadsheet className="text-spiritual-blue w-6 h-6" />
+                  70-Day Contest Reading Portions
+                </CardTitle>
+                <p className="text-sm text-slate-500 mt-1">Download the full 70-day portion schedule in PDF format.</p>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-6">
+                    <div className="bg-blue-50 p-4 rounded-full">
+                      <Users className="text-spiritual-blue w-8 h-8" />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Adult Registry Portions</h3>
+                      <p className="text-sm text-slate-500 mt-1">Full 70-day schedule including Old Testament, Psalms, Proverbs, and NT.</p>
+                    </div>
+                    <div className="flex flex-col w-full gap-3">
+                      <Button 
+                        variant="outline"
+                        className="w-full border-spiritual-blue text-spiritual-blue hover:bg-blue-50 h-11 text-base font-bold rounded-xl"
+                        onClick={() => handlePreview('adult')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <Eye className="mr-2 h-5 w-5" /> Preview PDF
+                      </Button>
+                      <Button 
+                        className="w-full bg-spiritual-blue hover:bg-blue-700 h-11 text-base font-bold rounded-xl shadow-lg shadow-blue-600/10"
+                        onClick={() => generateReadingPDF(contestReadings.filter(r => r.category === 'adult'), 'adult')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <DownloadIcon className="mr-2 h-5 w-5" /> Download PDF
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 h-11 text-sm font-bold rounded-xl"
+                        onClick={() => handlePreview('adult', 'attendance')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> Preview Attendance
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 h-11 text-sm font-bold rounded-xl"
+                        onClick={() => generateAttendancePDF(contestReadings.filter(r => r.category === 'adult'), 'adult')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <DownloadIcon className="mr-2 h-4 w-4 text-spiritual-blue" /> Download Attendance Sheet
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-6">
+                    <div className="bg-spiritual-gold/10 p-4 rounded-full">
+                      <Users className="text-spiritual-gold w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900">Kids & Teens Portions</h3>
+                      <p className="text-sm text-slate-500 mt-1">Tailored 70-day schedule focusing on Psalms, Proverbs, and NT.</p>
+                    </div>
+                    <div className="flex flex-col w-full gap-3">
+                      <Button 
+                        variant="outline"
+                        className="w-full border-spiritual-gold text-spiritual-gold hover:bg-amber-50 h-11 text-base font-bold rounded-xl"
+                        onClick={() => handlePreview('kids_teens')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <Eye className="mr-2 h-5 w-5" /> Preview PDF
+                      </Button>
+                      <Button 
+                        className="w-full bg-spiritual-gold hover:bg-spiritual-gold/90 h-11 text-base font-bold rounded-xl shadow-lg shadow-amber-600/10"
+                        onClick={() => generateReadingPDF(contestReadings.filter(r => r.category === 'kids_teens'), 'kids_teens')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <DownloadIcon className="mr-2 h-5 w-5" /> Download PDF
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 h-11 text-sm font-bold rounded-xl"
+                        onClick={() => handlePreview('kids_teens', 'attendance')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> Preview Attendance
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 h-11 text-sm font-bold rounded-xl"
+                        onClick={() => generateAttendancePDF(contestReadings.filter(r => r.category === 'kids_teens'), 'kids_teens')}
+                        disabled={contestReadings.length === 0}
+                      >
+                        <DownloadIcon className="mr-2 h-4 w-4 text-spiritual-gold" /> Download Attendance Sheet
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {contestReadings.length === 0 && (
+                  <div className="mt-8 p-4 bg-orange-50 border border-orange-100 rounded-xl text-orange-700 text-sm flex items-center gap-3">
+                    <AlertCircleIcon className="h-5 w-5 shrink-0" />
+                    <span>No reading portions found. Please upload them in the <Link to="/admin/contest" className="font-bold underline">Contest Manager</Link> first.</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
           </TabsContent>
+
+
 
           <TabsContent value="verses">
             <div className="bg-white rounded-2xl shadow-xl border overflow-hidden animate-in fade-in zoom-in-95 duration-300">
@@ -741,6 +755,32 @@ const Admin = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Global PDF Preview Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+            <DialogHeader className="p-4 border-b bg-slate-50">
+              <DialogTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-spiritual-blue" />
+                {previewTitle}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 w-full bg-slate-100 flex items-center justify-center p-4">
+              {previewPdfUrl ? (
+                <iframe 
+                  src={previewPdfUrl} 
+                  className="w-full h-full border rounded shadow-inner bg-white"
+                  title="PDF Preview"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="animate-spin text-spiritual-blue h-10 w-10" />
+                  <p className="text-slate-500 font-medium">Preparing Preview...</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 };
