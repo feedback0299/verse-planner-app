@@ -115,8 +115,18 @@ const splitTextUsingCanvas = (text: string, fontSize: number, maxWidthMm: number
 
 const toTamilOnly = (text: string): string => {
   if (!text) return text;
-  // This regex matches everything up to the first slash (if present) and the slash itself
-  return text.replace(/^[^/]+\//, '').trim();
+  // Globally replace anything that looks like an English prefix (English letters, dots, spaces, numbers followed by /)
+  return text.replace(/[^/,\u0B80-\u0BFF]+\//g, '').trim();
+};
+
+/**
+ * Merges multiple reading portions into a single cleaned string.
+ */
+const mergePortions = (portions: (string | null | undefined)[]): string => {
+  return portions
+    .filter(p => !!p)
+    .map(p => toTamilOnly(String(p)))
+    .join(', ');
 };
 
 /**
@@ -162,74 +172,72 @@ const createReadingDocument = (readings: any[], category: 'kids_teens' | 'adult'
   doc.addFont('Tamil.ttf', 'Tamil', 'normal');
   doc.setFont('Tamil', 'normal');
   
-  const title = category === 'kids_teens' ? '70-Day Contest: Kids & Teens Portions' : '70-Day Contest: Adult Portions';
+  const docTitle = category === 'kids_teens' ? '70-Day Contest: Kids & Teens Portions' : '70-Day Contest: Adult Portions';
   
   // Header
   doc.setFontSize(18);
   doc.setTextColor(41, 128, 185); // Spiritual Blue-ish
   
-  // Render main title via Canvas for perfect shaping
-  const titleImg = renderTextToImage(title, 18, '#2980b9');
-  if (titleImg) {
-    doc.addImage(titleImg.data, 'PNG', 14, 15, titleImg.width * PT_TO_MM, titleImg.height * PT_TO_MM);
-  } else {
-    doc.text(title, 14, 20);
-  }
+  // Header - Center aligned same as Attendance for consistency
+  doc.setFontSize(22);
+  doc.setTextColor(0, 0, 0); // Black for printing
   
+  const headerImg = renderTextToImage("Athumanesar India", 22, '#000000');
+  if (headerImg) {
+    doc.addImage(headerImg.data, 'PNG', 105 - ((headerImg.width * PT_TO_MM) / 2), 10, headerImg.width * PT_TO_MM, headerImg.height * PT_TO_MM);
+  }
+
+  doc.setFontSize(11);
+  doc.setTextColor(50);
+  const subtitle = `70 days Bible reading contest (${category === 'kids_teens' ? 'Kids & Teens' : 'Adult'}) - Portions`;
+  
+  const subtitleImg = renderTextToImage(subtitle, 11, '#333333');
+  if (subtitleImg) {
+    doc.addImage(subtitleImg.data, 'PNG', 105 - ((subtitleImg.width * PT_TO_MM) / 2), 20, subtitleImg.width * PT_TO_MM, subtitleImg.height * PT_TO_MM);
+  }
+
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.setFont('Tamil', 'normal');
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 28);
   doc.text(`Total Days: ${readings.length}`, 15, 33);
 
   // Table Config
-  const columns = category === 'kids_teens' 
-    ? [
-        { header: 'Day', dataKey: 'day' },
-        { header: 'Psalms', dataKey: 'psalms' },
-        { header: 'Proverbs', dataKey: 'proverbs' },
-        { header: 'New Testament', dataKey: 'new_testament' }
-      ]
-    : [
-        { header: 'Day', dataKey: 'day' },
-        { header: 'Old Testament', dataKey: 'old_testament' },
-        { header: 'Psalms', dataKey: 'psalms' },
-        { header: 'Proverbs', dataKey: 'proverbs' },
-        { header: 'New Testament', dataKey: 'new_testament' }
-      ];
+  const columns = [
+    { header: 'Day', dataKey: 'day' },
+    { header: 'Portion', dataKey: 'portion' }
+  ];
 
   const body = readings.sort((a, b) => a.day - b.day).map(r => {
-    if (category === 'kids_teens') {
-      return [r.day, r.psalms, r.proverbs, r.new_testament];
-    } else {
-      return [r.day, r.old_testament, r.psalms, r.proverbs, r.new_testament];
-    }
+    const portions = category === 'kids_teens' 
+      ? [r.psalms, r.proverbs, r.new_testament]
+      : [r.old_testament, r.psalms, r.proverbs, r.new_testament];
+    
+    return [r.day, mergePortions(portions)];
   });
 
   autoTable(doc, {
     startY: 40,
     head: [columns.map(col => col.header)],
     body: body,
-    theme: 'striped',
+    theme: 'grid',
     styles: { 
-      fontSize: 8.5, 
-      cellPadding: 2, 
+      fontSize: 8, 
+      cellPadding: 1.5, 
       font: 'Tamil', 
       fontStyle: 'normal', 
-      overflow: 'linebreak' 
+      overflow: 'linebreak',
+      lineWidth: 0.1,
+      lineColor: [80, 80, 80]
     },
     headStyles: { 
-      fillColor: [41, 128, 185], 
+      fillColor: [40, 40, 40], // Dark gray for headers
       textColor: 255, 
       fontSize: 9, 
       fontStyle: 'normal' 
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' }, // Day
-      1: { cellWidth: category === 'adult' ? 44 : 58 }, 
-      2: { cellWidth: category === 'adult' ? 40 : 54 }, 
-      3: { cellWidth: category === 'adult' ? 40 : 54 }, 
-      4: { cellWidth: 40 }  // NT
+      0: { cellWidth: 15, halign: 'center' }, // Day
+      1: { cellWidth: 165 } // Merged Portions
     },
     tableWidth: 180, // Explicitly fit A4 area (210 - 30 margin)
     margin: { left: 15, right: 15, top: 20 },
@@ -238,12 +246,13 @@ const createReadingDocument = (readings: any[], category: 'kids_teens' | 'adult'
       if (data.cell.section === 'body' && data.row.raw && typeof data.column.index !== 'undefined') {
         const rawValue = data.row.raw[data.column.index];
         if (rawValue !== undefined && rawValue !== null) {
-          text = toTamilOnly(String(rawValue));
+          text = String(rawValue);
         }
       }
       
       if (/[\u0B80-\u0BFF]/.test(text)) {
-        const usableWidthMm = data.cell.width - data.cell.padding('left') - data.cell.padding('right');
+        // Use the fixed column width (165mm) instead of cell.width which can be 0 here
+        const usableWidthMm = 165 - (data.cell.padding('left') + data.cell.padding('right'));
         
         // CRITICAL FIX: Use Canvas-based splitting to prevent vertical text bug
         const lines = splitTextUsingCanvas(text, data.cell.styles.fontSize, usableWidthMm);
@@ -270,7 +279,8 @@ const createReadingDocument = (readings: any[], category: 'kids_teens' | 'adult'
 
 export const generateReadingPDF = (readings: any[], category: 'kids_teens' | 'adult') => {
   const doc = createReadingDocument(readings, category);
-  doc.save(`70days_${category}_portions.pdf`);
+  const formattedCategory = category === 'kids_teens' ? 'KidsTeens' : 'Adult';
+  doc.save(`AthumanesarIndia70DaysContest_${formattedCategory}_Portions.pdf`);
 };
 
 export const getReadingPdfBlobUrl = (readings: any[], category: 'kids_teens' | 'adult') => {
@@ -287,11 +297,11 @@ const createAttendanceDocument = (readings: any[], category: 'kids_teens' | 'adu
   doc.addFont('Tamil.ttf', 'Tamil', 'normal');
   doc.setFont('Tamil', 'normal');
 
-  // Header - Same as Portion Doc for consistency
-  doc.setFontSize(18);
-  doc.setTextColor(41, 128, 185);
+  // Header - Standardized B&W
+  doc.setFontSize(22);
+  doc.setTextColor(0, 0, 0);
   
-  const headerImg = renderTextToImage("Athumanesar India", 18, '#2980b9');
+  const headerImg = renderTextToImage("Athumanesar India", 22, '#000000');
   if (headerImg) {
     doc.addImage(headerImg.data, 'PNG', 105 - ((headerImg.width * PT_TO_MM) / 2), 10, headerImg.width * PT_TO_MM, headerImg.height * PT_TO_MM);
   }
@@ -314,57 +324,45 @@ const createAttendanceDocument = (readings: any[], category: 'kids_teens' | 'adu
   const sortedReadings = [...readings].sort((a, b) => a.day - b.day);
 
   // Column Config matching Portion Doc + Done Column
-  const columns = category === 'kids_teens' 
-    ? [
-        { header: 'Done', dataKey: 'done' },
-        { header: 'Day', dataKey: 'day' },
-        { header: 'Psalms', dataKey: 'psalms' },
-        { header: 'Proverbs', dataKey: 'proverbs' },
-        { header: 'New Testament', dataKey: 'new_testament' }
-      ]
-    : [
-        { header: 'Done', dataKey: 'done' },
-        { header: 'Day', dataKey: 'day' },
-        { header: 'Old Testament', dataKey: 'old_testament' },
-        { header: 'Psalms', dataKey: 'psalms' },
-        { header: 'Proverbs', dataKey: 'proverbs' },
-        { header: 'New Testament', dataKey: 'new_testament' }
-      ];
+  const columns = [
+    { header: 'Done', dataKey: 'done' },
+    { header: 'Day', dataKey: 'day' },
+    { header: 'Portion', dataKey: 'portion' }
+  ];
 
   const body = sortedReadings.map(r => {
-    if (category === 'kids_teens') {
-      return ['[   ]', r.day, r.psalms, r.proverbs, r.new_testament];
-    } else {
-      return ['[   ]', r.day, r.old_testament, r.psalms, r.proverbs, r.new_testament];
-    }
+    const portions = category === 'kids_teens' 
+      ? [r.psalms, r.proverbs, r.new_testament]
+      : [r.old_testament, r.psalms, r.proverbs, r.new_testament];
+    
+    return ['[   ]', r.day, mergePortions(portions)];
   });
 
   autoTable(doc, {
     startY: 38,
     head: [columns.map(col => col.header)],
     body: body,
-    theme: 'striped',
+    theme: 'grid',
     styles: { 
-      fontSize: 7, 
-      cellPadding: 1, 
+      fontSize: 7.5, 
+      cellPadding: 1.2, 
       font: 'Tamil', 
       fontStyle: 'normal', 
-      overflow: 'linebreak'
+      overflow: 'linebreak',
+      lineWidth: 0.1,
+      lineColor: [80, 80, 80]
     },
     headStyles: { 
-      fillColor: [41, 128, 185], 
+      fillColor: [40, 40, 40], // Dark gray for headers
       textColor: 255, 
       fontSize: 7.5, 
       fontStyle: 'normal',
       halign: 'center' 
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' }, // Done
-      1: { cellWidth: 10, halign: 'center' }, // Day
-      2: { cellWidth: 36 }, // OT
-      3: { cellWidth: 46 }, // Psalms
-      4: { cellWidth: 36 }, // Prov
-      5: { cellWidth: 36 }  // NT
+      0: { cellWidth: 15, halign: 'center' }, // Done
+      1: { cellWidth: 15, halign: 'center' }, // Day
+      2: { cellWidth: 150 } // Merged Portions
     },
     tableWidth: 180, // Explicitly fit A4 area (210 - 30 margin)
     margin: { left: 15, right: 15, top: 15, bottom: 10 },
@@ -373,12 +371,13 @@ const createAttendanceDocument = (readings: any[], category: 'kids_teens' | 'adu
       if (data.cell.section === 'body' && data.row.raw && typeof data.column.index !== 'undefined') {
         const rawValue = data.row.raw[data.column.index];
         if (rawValue !== undefined && rawValue !== null) {
-          text = toTamilOnly(String(rawValue));
+          text = String(rawValue);
         }
       }
       
       if (/[\u0B80-\u0BFF]/.test(text)) {
-        const usableWidthMm = data.cell.width - data.cell.padding('left') - data.cell.padding('right');
+        // Use the fixed column width (150mm) instead of cell.width which can be 0 here
+        const usableWidthMm = 150 - (data.cell.padding('left') + data.cell.padding('right'));
         
         // CRITICAL FIX: Use Canvas-based splitting to prevent vertical text bug
         const lines = splitTextUsingCanvas(text, data.cell.styles.fontSize, usableWidthMm);
@@ -409,7 +408,8 @@ const createAttendanceDocument = (readings: any[], category: 'kids_teens' | 'adu
 
 export const generateAttendancePDF = (readings: any[], category: 'kids_teens' | 'adult') => {
   const doc = createAttendanceDocument(readings, category);
-  doc.save(`Attendance_${category}_portions.pdf`);
+  const formattedCategory = category === 'kids_teens' ? 'KidsTeens' : 'Adult';
+  doc.save(`AthumanesarIndia70DaysContest_${formattedCategory}_Attendance.pdf`);
 };
 
 export const getAttendancePdfBlobUrl = (readings: any[], category: 'kids_teens' | 'adult') => {
