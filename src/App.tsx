@@ -20,6 +20,7 @@ import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Register from "@/pages/Register";
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import Planner from "@/pages/Planner";
 import ContestAdmin from "@/pages/ContestAdmin";
 import NotFound from "@/pages/NotFound";
@@ -100,6 +101,7 @@ const AppContent = () => {
         } />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/planner" element={
           <ProtectedRoute>
             <Planner />

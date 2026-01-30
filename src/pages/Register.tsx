@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/dbService/supabase';
-import { Loader2, UserPlus, Phone, Mail, Lock, User, MapPin, CheckCircle2, Globe, Building2, Church } from 'lucide-react';
+import { Loader2, UserPlus, Phone, Mail, Lock, User, MapPin, CheckCircle2, Globe, Building2, Church, Eye, EyeOff } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
@@ -28,6 +28,9 @@ const Register = () => {
     category: 'adult'
   });
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -250,14 +253,46 @@ const Register = () => {
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="password" name="password" type="password" placeholder="••••••••" className="pl-10" required value={formData.password} onChange={handleChange} />
+                    <Input 
+                      id="password" 
+                      name="password" 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="••••••••" 
+                      className="pl-10 pr-10" 
+                      required 
+                      value={formData.password} 
+                      onChange={handleChange} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="••••••••" className="pl-10" required value={formData.confirmPassword} onChange={handleChange} />
+                    <Input 
+                      id="confirmPassword" 
+                      name="confirmPassword" 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="••••••••" 
+                      className="pl-10 pr-10" 
+                      required 
+                      value={formData.confirmPassword} 
+                      onChange={handleChange} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
               </div>
