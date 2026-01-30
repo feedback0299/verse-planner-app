@@ -179,6 +179,11 @@ const Login = () => {
                     onChange={handleChange} 
                   />
                 </div>
+                {isForgotPassword && (
+                  <p className="text-sm text-red-600 font-medium">
+                    ⚠️ Please check your spam folder if you don't see the email. Mark it as "Not Spam" to ensure future emails arrive in your inbox.
+                  </p>
+                )}
               </div>
 
               {!isForgotPassword && (
