@@ -797,11 +797,33 @@ const Admin = () => {
             </DialogHeader>
             <div className="flex-1 w-full bg-slate-100 flex items-center justify-center p-4">
               {previewPdfUrl ? (
-                <iframe 
-                  src={previewPdfUrl} 
-                  className="w-full h-full border rounded shadow-inner bg-white"
-                  title="PDF Preview"
-                />
+                <div className="w-full h-full flex flex-col">
+                  {/* Desktop Preview */}
+                  <iframe 
+                    src={previewPdfUrl} 
+                    className="hidden md:block w-full h-full border rounded shadow-inner bg-white"
+                    title="PDF Preview"
+                  />
+                  {/* Mobile Preview Fallback */}
+                  <div className="md:hidden flex flex-col items-center justify-center gap-6 h-full text-center px-6">
+                    <div className="bg-spiritual-blue/10 p-6 rounded-full">
+                      <FileSpreadsheet className="w-12 h-12 text-spiritual-blue" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900">PDF Preview</h3>
+                      <p className="text-slate-500 text-sm mt-2 max-w-[240px]">
+                        Embedded previews are restricted on mobile. Click below to view the professional layout.
+                      </p>
+                    </div>
+                    <Button 
+                      className="bg-spiritual-blue hover:bg-blue-700 w-full max-w-[240px] gap-2 font-bold shadow-lg"
+                      onClick={() => window.open(previewPdfUrl, '_blank')}
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      View in New Tab
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="animate-spin text-spiritual-blue h-10 w-10" />

@@ -37,8 +37,8 @@ const renderTextToImage = (text: string, fontSize: number, color: string = '#000
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Use a higher scale for high-definition PDF results
-  const scale = 6; 
+  // Scale 2.5 provides ~180dpi quality while keeping file sizes small (~7MB)
+  const scale = 2.5; 
   const scaledFontSize = fontSize * scale;
 
   // Set font (browser handles complex script shaping automatically)
@@ -81,8 +81,8 @@ const splitTextUsingCanvas = (text: string, fontSize: number, maxWidthMm: number
   const ctx = canvas.getContext('2d');
   if (!ctx) return [text];
   
-  // Use same HD scale as rendering for precision
-  const scale = 6;
+  // Use a scale of 3 for precise measurement
+  const scale = 3;
   ctx.font = `${fontSize * scale}px "${TAMIL_FONT_FAMILY}", "Noto Sans Tamil", sans-serif`;
   
   const maxWidthCanvas = (maxWidthMm / PT_TO_MM) * scale;
