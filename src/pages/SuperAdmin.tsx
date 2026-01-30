@@ -5,18 +5,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, LogOut, UserPlus, Users, ShieldAlert } from 'lucide-react';
+import { Loader2, Plus, Trash2, LogOut, UserPlus, Users, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 
 const SuperAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   
   // Admin Management State
   const [admins, setAdmins] = useState<any[]>([]);
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' });
+  const [showNewAdminPassword, setShowNewAdminPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -154,14 +156,23 @@ const SuperAdmin = () => {
               </div>
               <div className="space-y-2">
                  <Label htmlFor="password">Master Key</Label>
-                 <Input 
-                    id="password" 
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)} 
-                    className="bg-gray-900 border-red-900/50"
-                    required
-                 />
+                 <div className="relative">
+                   <Input 
+                      id="password" 
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)} 
+                      className="bg-gray-900 border-red-900/50 pr-10"
+                      required
+                   />
+                   <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-300 focus:outline-none"
+                   >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                   </button>
+                 </div>
               </div>
               <Button type="submit" className="w-full bg-red-900 hover:bg-red-800 text-white" disabled={loading}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Access Mainframe'}
@@ -218,13 +229,23 @@ const SuperAdmin = () => {
                 </div>
                 <div>
                   <Label>Password</Label>
-                  <Input
-                    type="text" 
-                    value={newAdmin.password}
-                    onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
-                    placeholder="Initial Password"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showNewAdminPassword ? "text" : "password"}
+                      value={newAdmin.password}
+                      onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
+                      placeholder="Initial Password"
+                      className="pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showNewAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
                   {loading ? <Loader2 className="animate-spin mr-2" /> : <Plus className="mr-2" />} Assign Admin Role
