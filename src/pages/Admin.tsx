@@ -6,14 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/lib/dbService/supabase';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, FileSpreadsheet, ShieldCheck, Calendar as CalendarIcon, LogOut, Download as DownloadIcon, AlertCircle as AlertCircleIcon } from 'lucide-react';
+import { 
+  Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, 
+  FileSpreadsheet, ShieldCheck, Calendar, LogOut, Download as DownloadIcon, 
+  Eye, AlertCircle as AlertCircleIcon, Download 
+} from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from 'react-router-dom';
 import { generateReadingPDF, getReadingPdfBlobUrl, generateAttendancePDF, getAttendancePdfBlobUrl } from '@/lib/utils/portionPdfUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Eye } from 'lucide-react';
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
@@ -759,11 +762,38 @@ const Admin = () => {
         {/* Global PDF Preview Dialog */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
           <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden rounded-2xl">
-            <DialogHeader className="p-4 border-b bg-slate-50">
-              <DialogTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-spiritual-blue" />
-                {previewTitle}
-              </DialogTitle>
+            <DialogHeader className="p-4 border-b bg-slate-50 flex flex-row items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="flex items-center gap-2 text-base md:text-lg truncate">
+                  <FileSpreadsheet className="w-5 h-5 text-spiritual-blue shrink-0" />
+                  <span className="truncate">{previewTitle}</span>
+                </DialogTitle>
+              </div>
+              
+              <div className="flex-1 flex justify-center">
+                {previewPdfUrl && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2 border-spiritual-blue text-spiritual-blue bg-white shadow-sm hover:bg-blue-50 font-bold whitespace-nowrap"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewPdfUrl;
+                      link.download = `${previewTitle.replace(/\s+/g, '_')}.pdf`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex-1 hidden sm:block">
+                {/* Right spacer for centering */}
+              </div>
             </DialogHeader>
             <div className="flex-1 w-full bg-slate-100 flex items-center justify-center p-4">
               {previewPdfUrl ? (
