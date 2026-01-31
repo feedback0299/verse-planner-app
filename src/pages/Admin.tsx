@@ -262,14 +262,25 @@ const Admin = () => {
       setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
 
       try {
+        // Prepare headers for Auth or Bypass
+        const isBypass = localStorage.getItem('admin_bypass') === 'true';
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable__jGBBI1KtA8NOtdR5kKXjw_CMth1tkg';
+        const headers = isBypass ? { Authorization: `Bearer ${anonKey}` } : undefined;
+
         const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-          body: { full_name: p.full_name, email: p.email }
+          body: { full_name: p.full_name, email: p.email },
+          headers: headers
         });
 
         if (error) throw error;
         successCount++;
-      } catch (err) {
+      } catch (err: any) {
+        // Fallback or detailed logging
         console.error(`Failed to send email to ${p.email}:`, err);
+        // Try fetch if supabase invoke fails? For now just log.
+        const message = err.message || JSON.stringify(err);
+        if (message.includes("jwt")) console.warn("JWT Error detected - try Test Email button debugging.");
+        
         failCount++;
       }
     }
@@ -280,6 +291,62 @@ const Admin = () => {
       description: `Successfully sent: ${successCount}. Failed: ${failCount}.`,
       variant: successCount > 0 ? "default" : "destructive"
     });
+  };
+
+  const handleTestEmail = async () => {
+    const testEmail = "feedback0299@gmail.com";
+    if (!window.confirm(`Send test email to ${testEmail}?`)) return;
+
+    setBroadcasting(true);
+    try {
+      // 0. Check Manual Bypass
+      const isBypass = localStorage.getItem('admin_bypass') === 'true';
+      let headers = {};
+      
+      if (isBypass) {
+          // In bypass mode, use the Anon Key to satisfy Edge Function JWT requirement
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable__jGBBI1KtA8NOtdR5kKXjw_CMth1tkg';
+          headers = { Authorization: `Bearer ${anonKey}` };
+      } else {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+              headers = { Authorization: `Bearer ${session.access_token}` };
+          }
+      }
+
+      console.log("Sending Test Email...", isBypass ? "(Bypass Mode - Anon Key)" : "(Auth Mode - User Token)");
+
+      // Construct Function URL manually to avoid Client interference
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
+      const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
+      
+      const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              ...headers // { Authorization: Bearer ... }
+          },
+          body: JSON.stringify({ full_name: "Test User", email: testEmail })
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          let errorJson;
+          try { errorJson = JSON.parse(errorText); } catch(e) {}
+          
+          throw new Error(errorJson?.message || errorJson?.error || `Function Error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Email Function Success:", data);
+
+      toast({ title: "Test Sent", description: `Email sent to ${testEmail}` });
+    } catch (err: any) {
+       console.error("Test Email Error:", err);
+       toast({ variant: "destructive", title: "Test Failed", description: err.message });
+    } finally {
+      setBroadcasting(false);
+    }
   };
 
 
@@ -392,6 +459,15 @@ const Admin = () => {
                                         Broadcast Welcome Emails
                                     </>
                                 )}
+                            </Button>
+                            <Button 
+                                onClick={handleTestEmail} 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 w-full md:w-auto border-orange-200 text-orange-600 hover:bg-orange-50 font-bold"
+                                disabled={broadcasting}
+                            >
+                                Test Email (feedback0299)
                             </Button>
                             <Button onClick={fetchParticipants} variant="outline" size="sm" className="h-9 w-full md:w-auto">Refresh Data</Button>
                         </div>
