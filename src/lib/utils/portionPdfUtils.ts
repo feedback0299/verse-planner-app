@@ -87,30 +87,127 @@ const splitTextUsingCanvas = (text: string, fontSize: number, maxWidthMm: number
   
   const maxWidthCanvas = (maxWidthMm / PT_TO_MM) * scale;
   
-  const words = text.split(' ');
+  // CRITICAL FIX: Split by commas first to keep book portions together
+  // This prevents "மத்தேயு 9, 01" from being split into "மத்தேயு 9," and "01"
+  const portions = text.split(',').map(p => p.trim());
   const lines: string[] = [];
   let currentLine = '';
   
-  for (const word of words) {
-    const testLine = currentLine ? currentLine + ' ' + word : word;
+  for (let i = 0; i < portions.length; i++) {
+    const portion = portions[i];
+    const isLastPortion = i === portions.length - 1;
+    const portionWithComma = isLastPortion ? portion : portion + ',';
+    
+    // Test if adding this portion (with comma) fits on current line
+    const testLine = currentLine ? currentLine + ' ' + portionWithComma : portionWithComma;
     const metrics = ctx.measureText(testLine);
     
-    // If word itself is too long for the column (rare for bible names), we have to split it
-    if (metrics.width > maxWidthCanvas && !currentLine) {
-        lines.push(word); // Forcing it here, could be refined to split middle-word
-        continue;
-    }
-
-    if (metrics.width > maxWidthCanvas) {
+    if (metrics.width > maxWidthCanvas && currentLine) {
+      // Current line is full, push it and start new line with this portion
       lines.push(currentLine);
-      currentLine = word;
+      currentLine = portionWithComma;
+    } else if (metrics.width > maxWidthCanvas && !currentLine) {
+      // Single portion is too long, need to split by words as fallback
+      const words = portion.split(' ');
+      let wordLine = '';
+      
+      for (const word of words) {
+        const testWordLine = wordLine ? wordLine + ' ' + word : word;
+        const wordMetrics = ctx.measureText(testWordLine);
+        
+        if (wordMetrics.width > maxWidthCanvas && wordLine) {
+          lines.push(wordLine + (isLastPortion ? '' : ','));
+          wordLine = word;
+        } else {
+          wordLine = testWordLine;
+        }
+      }
+      
+      if (wordLine) {
+        currentLine = wordLine + (isLastPortion ? '' : ',');
+      }
     } else {
       currentLine = testLine;
     }
   }
+  
   if (currentLine) lines.push(currentLine);
   
   return lines.length > 0 ? lines : [text];
+};
+
+/**
+ * Abbreviates Tamil Bible book names to make portions more compact.
+ * This is especially useful for Kids & Teens PDFs to prevent wrapping.
+ */
+const abbreviateTamilBookNames = (text: string): string => {
+  if (!text) return text;
+  
+  const abbreviations: Record<string, string> = {
+    'சங்கீதம்': 'சங்.',
+    'திரியோபாதிகள்': 'திரி.',
+    'நீதிமொழிகள்': 'நீதி.',
+    'மத்தேயு': 'மத்.',
+    'மாற்கு': 'மாற்.',
+    'லூக்கா': 'லூக்.',
+    'யோவான்': 'யோவா.',
+    'அப்போஸ்தலர்': 'அப்.',
+    'ரோமர்': 'ரோம.',
+    'கொரிந்தியர்': 'கொரி.',
+    'கலாத்தியர்': 'கலா.',
+    'எபேசியர்': 'எபே.',
+    'பிலிப்பியர்': 'பிலி.',
+    'கொலோசெயர்': 'கொலோ.',
+    'தெசலோனிக்கேயர்': 'தெச.',
+    'தீமோத்தேயு': 'தீமோ.',
+    'தீத்து': 'தீத்.',
+    'பிலேமோன்': 'பிலே.',
+    'எபிரெயர்': 'எபி.',
+    'யாக்கோபு': 'யாக்.',
+    'பேதுரு': 'பேது.',
+    'யூதா': 'யூதா',
+    'வெளிப்படுத்தல்': 'வெளி.',
+    'ஆதியாகமம்': 'ஆதி.',
+    'யாத்திராகமம்': 'யாத்.',
+    'லேவியராகமம்': 'லேவி.',
+    'எண்ணாகமம்': 'எண்.',
+    'உபாகமம்': 'உபா.',
+    'யோசுவா': 'யோசு.',
+    'நியாயாதிபதிகள்': 'நியா.',
+    'ரூத்': 'ரூத்',
+    'சாமுவேல்': 'சாமு.',
+    'இராஜாக்கள்': 'இரா.',
+    'நாளாகமம்': 'நாளா.',
+    'எஸ்றா': 'எஸ்.',
+    'நெகேமியா': 'நெகே.',
+    'எஸ்தர்': 'எஸ்த.',
+    'யோபு': 'யோபு',
+    'ஏசாயா': 'ஏசா.',
+    'எரேமியா': 'எரே.',
+    'புலம்பல்': 'புல.',
+    'எசேக்கியேல்': 'எசே.',
+    'தானியேல்': 'தானி.',
+    'ஓசியா': 'ஓசி.',
+    'யோவேல்': 'யோவே.',
+    'ஆமோஸ்': 'ஆமோ.',
+    'ஒபதியா': 'ஒப.',
+    'யோனா': 'யோனா',
+    'மீகா': 'மீகா',
+    'நாகூம்': 'நாகூ.',
+    'ஆபகூக்': 'ஆப.',
+    'செப்பனியா': 'செப்.',
+    'ஆகாய்': 'ஆகா.',
+    'சகரியா': 'சக.',
+    'மல்கியா': 'மல்.'
+  };
+  
+  let result = text;
+  for (const [full, abbr] of Object.entries(abbreviations)) {
+    // Use global replace to handle multiple occurrences
+    result = result.replace(new RegExp(full, 'g'), abbr);
+  }
+  
+  return result;
 };
 
 const toTamilOnly = (text: string): string => {
@@ -121,12 +218,20 @@ const toTamilOnly = (text: string): string => {
 
 /**
  * Merges multiple reading portions into a single cleaned string.
+ * For Kids & Teens, abbreviates book names to make portions more compact.
  */
-const mergePortions = (portions: (string | null | undefined)[]): string => {
-  return portions
+const mergePortions = (portions: (string | null | undefined)[], category?: 'kids_teens' | 'adult'): string => {
+  let result = portions
     .filter(p => !!p)
     .map(p => toTamilOnly(String(p)))
     .join(', ');
+  
+  // Apply abbreviations only for Kids & Teens to save space
+  if (category === 'kids_teens') {
+    result = abbreviateTamilBookNames(result);
+  }
+  
+  return result;
 };
 
 /**
@@ -212,7 +317,7 @@ const createReadingDocument = (readings: any[], category: 'kids_teens' | 'adult'
       ? [r.psalms, r.proverbs, r.new_testament]
       : [r.old_testament, r.psalms, r.proverbs, r.new_testament];
     
-    return [r.day, mergePortions(portions)];
+    return [r.day, mergePortions(portions, category)];
   });
 
   autoTable(doc, {
@@ -335,7 +440,7 @@ const createAttendanceDocument = (readings: any[], category: 'kids_teens' | 'adu
       ? [r.psalms, r.proverbs, r.new_testament]
       : [r.old_testament, r.psalms, r.proverbs, r.new_testament];
     
-    return ['[   ]', r.day, mergePortions(portions)];
+    return ['[   ]', r.day, mergePortions(portions, category)];
   });
 
   autoTable(doc, {

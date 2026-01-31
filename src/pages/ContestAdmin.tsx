@@ -286,7 +286,7 @@ const ContestAdmin = () => {
 
             {/* Timeline Tab */}
             <TabsContent value="timeline" className="mt-0">
-               <ContestTimeline readings={readings} />
+               <ContestTimeline readings={readings} onReadingsUpdate={fetchReadings} />
             </TabsContent>
 
             {/* Participants Tab */}
