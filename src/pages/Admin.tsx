@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, 
   FileSpreadsheet, ShieldCheck, Calendar, LogOut, Download as DownloadIcon, 
-  Eye, AlertCircle as AlertCircleIcon, Download, Mail, Send
+  Eye, AlertCircle as AlertCircleIcon, Download, Mail, Send, QrCode
 } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
@@ -236,51 +236,79 @@ const Admin = () => {
   };
 
   const handleBroadcastWelcomeEmails = async () => {
-    // Only send to participants who have an email
-    const participantsWithEmail = participants.filter(p => !!p.email);
+    // 1. Filter: Valid Email AND Not Sent Yet
+    const participantsToEmail = participants.filter(p => !!p.email && !p.welcome_email_sent);
+    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length;
     
-    if (participantsWithEmail.length === 0) {
+    if (participantsToEmail.length === 0) {
       toast({
-        variant: "destructive",
-        title: "No Emails Found",
-        description: "There are no participants with valid email addresses to send to."
+        title: "Nothing to Send",
+        description: `All ${alreadySentCount} participants with emails have already received the welcome message.`,
       });
       return;
     }
 
-    const confirm = window.confirm(`Are you sure you want to send the welcome email to all ${participantsWithEmail.length} participants?`);
+    const confirm = window.confirm(
+      `Found ${participantsToEmail.length} unsent participants.\n` +
+      `(${alreadySentCount} skipped as already sent)\n\n` +
+      `Send welcome email to these ${participantsToEmail.length} people?`
+    );
     if (!confirm) return;
 
     setBroadcasting(true);
-    setBroadcastProgress({ current: 0, total: participantsWithEmail.length });
+    setBroadcastProgress({ current: 0, total: participantsToEmail.length });
 
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < participantsWithEmail.length; i++) {
-      const p = participantsWithEmail[i];
+    // Prepare headers once
+    const isBypass = localStorage.getItem('admin_bypass') === 'true';
+    let headers: Record<string, string> = {};
+    if (isBypass) {
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable__jGBBI1KtA8NOtdR5kKXjw_CMth1tkg';
+        headers = { Authorization: `Bearer ${anonKey}` };
+    } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            headers = { Authorization: `Bearer ${session.access_token}` };
+        }
+    }
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
+    const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
+
+    for (let i = 0; i < participantsToEmail.length; i++) {
+      const p = participantsToEmail[i];
       setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
 
       try {
-        // Prepare headers for Auth or Bypass
-        const isBypass = localStorage.getItem('admin_bypass') === 'true';
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable__jGBBI1KtA8NOtdR5kKXjw_CMth1tkg';
-        const headers = isBypass ? { Authorization: `Bearer ${anonKey}` } : undefined;
-
-        const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-          body: { full_name: p.full_name, email: p.email },
-          headers: headers
+        // 2. Send via Manual Fetch
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
+            },
+            body: JSON.stringify({ full_name: p.full_name, email: p.email })
         });
 
-        if (error) throw error;
+        if (!response.ok) {
+           throw new Error(`Status ${response.status}`);
+        }
+
+        // 3. Mark as Sent in DB
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ welcome_email_sent: true })
+            .eq('id', p.id);
+
+        if (updateError) {
+            console.error(`Email sent but failed to update status for ${p.email}`, updateError);
+        }
+
         successCount++;
       } catch (err: any) {
-        // Fallback or detailed logging
         console.error(`Failed to send email to ${p.email}:`, err);
-        // Try fetch if supabase invoke fails? For now just log.
-        const message = err.message || JSON.stringify(err);
-        if (message.includes("jwt")) console.warn("JWT Error detected - try Test Email button debugging.");
-        
         failCount++;
       }
     }
@@ -288,9 +316,12 @@ const Admin = () => {
     setBroadcasting(false);
     toast({
       title: "Broadcast Complete",
-      description: `Successfully sent: ${successCount}. Failed: ${failCount}.`,
+      description: `Sent: ${successCount}. Failed: ${failCount}. Skipped: ${alreadySentCount}.`,
       variant: successCount > 0 ? "default" : "destructive"
     });
+    
+    // Refresh list to show updated status
+    fetchParticipants();
   };
 
   const handleTestEmail = async () => {
@@ -417,6 +448,45 @@ const Admin = () => {
               <CardContent>
                 <p className="text-sm text-slate-500 leading-relaxed">View and manage church member registrations and profiles.</p>
                 <Button variant="link" className="p-0 h-auto mt-4 text-spiritual-blue font-bold">Coming Soon</Button>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="group cursor-pointer hover:shadow-xl transition-all border-t-4 border-t-slate-800 bg-white"
+              onClick={async () => {
+                try {
+                  toast({ title: "Generating...", description: "Fetching high-res QR code..." });
+                  const imageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=2000x2000&qzone=2&data=https://athumanesarindia.com/login";
+                  const response = await fetch(imageUrl);
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = "athumanesar-banner-qr.png";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                  toast({ title: "Downloaded", description: "High-resolution QR code saved." });
+                } catch (error) {
+                  console.error("QR Download Error:", error);
+                  toast({ variant: "destructive", title: "Error", description: "Failed to download QR code." });
+                }
+              }}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl flex items-center gap-3 text-slate-900">
+                  <div className="bg-slate-100 p-2 rounded-lg text-slate-700 group-hover:bg-slate-200 transition-colors">
+                    <QrCode className="w-6 h-6" />
+                  </div>
+                  Banner QR Code
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-500 leading-relaxed">Download a 2000px high-quality QR code for large banners and print materials.</p>
+                <div className="mt-6 flex items-center text-sm font-bold text-slate-700 group-hover:gap-2 transition-all">
+                  Download PNG <span>↓</span>
+                </div>
               </CardContent>
             </Card>
           </div>
