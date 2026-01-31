@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Loader2, Plus, Trash2, UserPlus, Users, Video, ExternalLink, 
   FileSpreadsheet, ShieldCheck, Calendar, LogOut, Download as DownloadIcon, 
-  Eye, AlertCircle as AlertCircleIcon, Download 
+  Eye, AlertCircle as AlertCircleIcon, Download, Mail, Send
 } from 'lucide-react';
 import DailyVerseCalendar from '@/components/DailyVerseCalendar';
 import MonthlyPlanner from '@/components/MonthlyPlanner';
@@ -38,6 +38,10 @@ const Admin = () => {
   const [appliedFilters, setAppliedFilters] = useState({ name: '', phone: '', branchType: 'all', mode: 'all' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  /* Email Broadcast State */
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [broadcastProgress, setBroadcastProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     fetchParticipants();
@@ -231,6 +235,53 @@ const Admin = () => {
     }
   };
 
+  const handleBroadcastWelcomeEmails = async () => {
+    // Only send to participants who have an email
+    const participantsWithEmail = participants.filter(p => !!p.email);
+    
+    if (participantsWithEmail.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Emails Found",
+        description: "There are no participants with valid email addresses to send to."
+      });
+      return;
+    }
+
+    const confirm = window.confirm(`Are you sure you want to send the welcome email to all ${participantsWithEmail.length} participants?`);
+    if (!confirm) return;
+
+    setBroadcasting(true);
+    setBroadcastProgress({ current: 0, total: participantsWithEmail.length });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < participantsWithEmail.length; i++) {
+      const p = participantsWithEmail[i];
+      setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
+
+      try {
+        const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+          body: { full_name: p.full_name, email: p.email }
+        });
+
+        if (error) throw error;
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to send email to ${p.email}:`, err);
+        failCount++;
+      }
+    }
+
+    setBroadcasting(false);
+    toast({
+      title: "Broadcast Complete",
+      description: `Successfully sent: ${successCount}. Failed: ${failCount}.`,
+      variant: successCount > 0 ? "default" : "destructive"
+    });
+  };
+
 
    return (
       <div className="px-4 py-6 md:p-10 max-w-7xl mx-auto space-y-6 md:space-y-10">
@@ -322,7 +373,31 @@ const Admin = () => {
                             <CardTitle className="text-xl">Contest Participants</CardTitle>
                             <p className="text-sm text-slate-500 mt-1">Manage 70-Day Journey registered users.</p>
                         </div>
-                        <Button onClick={fetchParticipants} variant="outline" size="sm" className="h-9 w-full md:w-auto">Refresh Data</Button>
+                        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                            <Button 
+                                onClick={handleBroadcastWelcomeEmails} 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 w-full md:w-auto border-spiritual-blue text-spiritual-blue hover:bg-blue-50"
+                                disabled={broadcasting || participants.length === 0}
+                            >
+                                {broadcasting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Sending ({broadcastProgress.current}/{broadcastProgress.total})
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mail className="w-4 h-4 mr-2" />
+                                        Broadcast Welcome Emails
+                                    </>
+                                )}
+                            </Button>
+                            <Button onClick={fetchParticipants} variant="outline" size="sm" className="h-9 w-full md:w-auto">Refresh Data</Button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 text-right w-full mt-1 px-1">
+                             Note: Emails may land in Spam. Please advise users to check their Junk folder.
+                        </p>
                     </div>
                     
                     {/* Search & Filters */}

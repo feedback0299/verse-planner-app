@@ -1,0 +1,6 @@
+{
+    "imports": {
+        "std/": "https://deno.land/std@0.177.0/",
+        "nodemailer": "https://esm.sh/nodemailer@6.9.16?target=deno"
+    }
+}

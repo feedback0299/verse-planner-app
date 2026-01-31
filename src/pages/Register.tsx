@@ -173,6 +173,16 @@ const Register = () => {
 
         if (progressError) console.error("Progress init error:", progressError);
 
+        // 5. Send Welcome Email
+        try {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: { full_name: formData.fullName, email: formData.email }
+          });
+        } catch (emailErr) {
+          console.error("Welcome email failed:", emailErr);
+          // Non-blocking for the user
+        }
+
         toast({
           title: "Registration Successful",
           description: `Welcome ${formData.fullName}! Your ID is ${customId}. Please check your email for verification.`,

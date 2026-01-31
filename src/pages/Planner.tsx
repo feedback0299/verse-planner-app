@@ -16,12 +16,19 @@ const Planner = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Helper to get current time in IST
+  const getISTDate = () => {
+    const now = new Date();
+    const istString = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    return new Date(istString);
+  };
+
   // February 1, 2026
   const START_DATE = new Date('2026-02-01T00:00:00');
   
   const getCurrentDay = () => {
-    const today = new Date();
-    const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayIST = getISTDate();
+    const todayUTC = Date.UTC(todayIST.getFullYear(), todayIST.getMonth(), todayIST.getDate());
     const startUTC = Date.UTC(START_DATE.getFullYear(), START_DATE.getMonth(), START_DATE.getDate());
     const diffTime = todayUTC - startUTC;
     return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -147,8 +154,15 @@ const Planner = () => {
   });
 
   const getTimingInfo = () => {
-    const today = new Date();
-    return today.getDay() === 0 ? "After 14:00 (After 3rd Service)" : "12:00 - 14:00";
+    const todayIST = getISTDate();
+    const day = todayIST.getDay();
+    const hours = todayIST.getHours();
+    
+    // Sunday (0) logic
+    if (day === 0) return "After 14:00 (After 3rd Service)";
+    
+    // Mon-Sat logic
+    return "12:00 - 14:00";
   };
 
   const isCompleted = (day: number) => progress[day - 1] === '1';
@@ -206,6 +220,9 @@ const Planner = () => {
           </p>
           <p className="text-amber-800 font-medium text-sm leading-relaxed italic border-t border-amber-200/50 pt-2">
             📌 Note: You must log in every day for 70 consecutive days, provide a short description of the reading portion, and select the check-box in the popup window to record your daily progress. Your 70-day Bible reading challenge will be officially completed only through these daily check-ins.
+          </p>
+          <p className="text-amber-800 font-medium text-xs leading-relaxed italic border-t border-amber-200/50 pt-2">
+            Important: If you don't see the welcome email or daily updates, please check your Spam/Junk folder.
           </p>
         </div>
 
