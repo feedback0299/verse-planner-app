@@ -16,7 +16,7 @@ import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from 'react-router-dom';
 import { generateReadingPDF, getReadingPdfBlobUrl, generateAttendancePDF, getAttendancePdfBlobUrl } from '@/lib/utils/portionPdfUtils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const Admin = () => {
   const [loading, setLoading] = useState(false);
@@ -42,6 +42,20 @@ const Admin = () => {
   /* Email Broadcast State */
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState({ current: 0, total: 0 });
+
+  /* Confirmation Dialog State */
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: React.ReactNode;
+    onConfirm: () => void;
+    confirmLabel?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     fetchParticipants();
@@ -235,31 +249,18 @@ const Admin = () => {
     }
   };
 
-  const handleBroadcastWelcomeEmails = async () => {
+  /* Separated execution logic for Broadcast */
+  const executeBroadcast = async () => {
     // 1. Filter: Valid Email AND Not Sent Yet
     const participantsToEmail = participants.filter(p => !!p.email && !p.welcome_email_sent);
-    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length;
     
-    if (participantsToEmail.length === 0) {
-      toast({
-        title: "Nothing to Send",
-        description: `All ${alreadySentCount} participants with emails have already received the welcome message.`,
-      });
-      return;
-    }
-
-    const confirm = window.confirm(
-      `Found ${participantsToEmail.length} unsent participants.\n` +
-      `(${alreadySentCount} skipped as already sent)\n\n` +
-      `Send welcome email to these ${participantsToEmail.length} people?`
-    );
-    if (!confirm) return;
-
+    setConfirmDialog(prev => ({ ...prev, isOpen: false })); // Close dialog
     setBroadcasting(true);
     setBroadcastProgress({ current: 0, total: participantsToEmail.length });
 
     let successCount = 0;
     let failCount = 0;
+    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length; 
 
     // Prepare headers once
     const isBypass = localStorage.getItem('admin_bypass') === 'true';
@@ -278,57 +279,85 @@ const Admin = () => {
     const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
 
     for (let i = 0; i < participantsToEmail.length; i++) {
-      const p = participantsToEmail[i];
-      setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
+        const p = participantsToEmail[i];
+        setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
 
-      try {
-        // 2. Send via Manual Fetch
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers
-            },
-            body: JSON.stringify({ full_name: p.full_name, email: p.email })
-        });
+        try {
+            // 2. Send via Manual Fetch
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...headers
+                },
+                body: JSON.stringify({ full_name: p.full_name, email: p.email })
+            });
 
-        if (!response.ok) {
-           throw new Error(`Status ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Status ${response.status}`);
+            }
+
+            // 3. Mark as Sent in DB
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ welcome_email_sent: true })
+                .eq('id', p.id);
+
+            if (updateError) {
+                console.error(`Email sent but failed to update status for ${p.email}`, updateError);
+            }
+
+            successCount++;
+        } catch (err: any) {
+            console.error(`Failed to send email to ${p.email}:`, err);
+            failCount++;
         }
-
-        // 3. Mark as Sent in DB
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ welcome_email_sent: true })
-            .eq('id', p.id);
-
-        if (updateError) {
-            console.error(`Email sent but failed to update status for ${p.email}`, updateError);
-        }
-
-        successCount++;
-      } catch (err: any) {
-        console.error(`Failed to send email to ${p.email}:`, err);
-        failCount++;
-      }
     }
 
     setBroadcasting(false);
     toast({
-      title: "Broadcast Complete",
-      description: `Sent: ${successCount}. Failed: ${failCount}. Skipped: ${alreadySentCount}.`,
-      variant: successCount > 0 ? "default" : "destructive"
+        title: "Broadcast Complete",
+        description: `Sent: ${successCount}. Failed: ${failCount}. Skipped: ${alreadySentCount}.`,
+        variant: successCount > 0 ? "default" : "destructive"
     });
     
     // Refresh list to show updated status
     fetchParticipants();
   };
 
-  const handleTestEmail = async () => {
-    const testEmail = "feedback0299@gmail.com";
-    if (!window.confirm(`Send test email to ${testEmail}?`)) return;
+  const handleBroadcastWelcomeEmails = async () => {
+    // 1. Filter: Valid Email AND Not Sent Yet
+    const participantsToEmail = participants.filter(p => !!p.email && !p.welcome_email_sent);
+    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length;
+    
+    if (participantsToEmail.length === 0) {
+      toast({
+        title: "Nothing to Send",
+        description: `All ${alreadySentCount} participants with emails have already received the welcome message.`,
+      });
+      return;
+    }
 
+    setConfirmDialog({
+        isOpen: true,
+        title: "Confirm Broadcast",
+        description: (
+            <div className="space-y-2">
+                <p>Found <strong>{participantsToEmail.length}</strong> unsent participants.</p>
+                <p className="text-sm text-slate-500">({alreadySentCount} skipped as already sent)</p>
+                <p>Send welcome email to these {participantsToEmail.length} people?</p>
+            </div>
+        ),
+        confirmLabel: "Yes, Send Broadcast",
+        onConfirm: executeBroadcast
+    });
+  };
+
+  const executeTestEmail = async () => {
+    const testEmail = "feedback0299@gmail.com";
+    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
     setBroadcasting(true);
+    
     try {
       // 0. Check Manual Bypass
       const isBypass = localStorage.getItem('admin_bypass') === 'true';
@@ -378,6 +407,17 @@ const Admin = () => {
     } finally {
       setBroadcasting(false);
     }
+  };
+
+  const handleTestEmail = async () => {
+    const testEmail = "feedback0299@gmail.com";
+    setConfirmDialog({
+        isOpen: true,
+        title: "Send Test Email",
+        description: `Are you sure you want to send a test email to ${testEmail}?`,
+        confirmLabel: "Send Test",
+        onConfirm: executeTestEmail
+    });
   };
 
 
@@ -456,7 +496,7 @@ const Admin = () => {
               onClick={async () => {
                 try {
                   toast({ title: "Generating...", description: "Fetching high-res QR code..." });
-                  const imageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=2000x2000&qzone=2&data=https://athumanesarindia.com/login";
+                  const imageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=2000x2000&qzone=2&data=https://preview--verse-planner-app.lovable.app/login";
                   const response = await fetch(imageUrl);
                   const blob = await response.blob();
                   const url = window.URL.createObjectURL(blob);
@@ -1054,6 +1094,22 @@ const Admin = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+         {/* General Confirmation Dialog */}
+         <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => { if(!open) setConfirmDialog(prev => ({...prev, isOpen: false })) }}>
+             <DialogContent className="sm:max-w-[425px]">
+                 <DialogHeader>
+                     <DialogTitle>{confirmDialog.title}</DialogTitle>
+                     <DialogDescription>
+                        {confirmDialog.description}
+                     </DialogDescription>
+                 </DialogHeader>
+                 <DialogFooter className="gap-2 sm:gap-0">
+                     <Button variant="outline" onClick={() => setConfirmDialog(prev => ({...prev, isOpen: false }))}>Cancel</Button>
+                     <Button onClick={confirmDialog.onConfirm}>{confirmDialog.confirmLabel || "Confirm"}</Button>
+                 </DialogFooter>
+             </DialogContent>
+         </Dialog>
       </div>
   );
 };
