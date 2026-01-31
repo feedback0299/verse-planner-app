@@ -56,9 +56,68 @@ const Register = () => {
     return !!data;
   };
 
-  const handleEmailBlur = async () => {
-    if (!formData.email || !formData.email.includes('@')) return;
+  const validateEmailContent = (email: string): string | null => {
+    // 1. Basic Format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return "Invalid email format.";
+
+    const [localPart, domain] = email.split('@');
+    const lowerDomain = domain.toLowerCase();
+
+    // 2. Domain Typos Check
+    // Catch things that look like gmail but aren't
+    if (lowerDomain.includes('gmail') && lowerDomain !== 'gmail.com') {
+      return "Did you mean @gmail.com? Please check your email domain.";
+    }
+    // Catch common TLD typos
+    if (lowerDomain.endsWith('.cim') || lowerDomain.endsWith('.cam') || lowerDomain.endsWith('.con') || lowerDomain.endsWith('.c0m')) {
+      return "Invalid domain extension. Did you mean .com?";
+    }
+
+    // 3. Gmail Specific Rules
+    if (lowerDomain === 'gmail.com') {
+      // Length: 6-30 chars
+      if (localPart.length < 6) return "Gmail username must be at least 6 characters long.";
+      if (localPart.length > 30) return "Gmail username must be less than 30 characters long.";
+      
+      // Allowed chars: letters, numbers, periods
+      if (!/^[a-z0-9.]+$/i.test(localPart)) return "Gmail username can only contain letters, numbers, and periods.";
+      
+      // Periods not at start/end
+      if (localPart.startsWith('.') || localPart.endsWith('.')) return "Gmail username cannot start or end with a period.";
+    }
+
+    // 4. Inappropriate / Junk Patterns
+    const blockedKeywords = ['test', 'sample', 'demo', 'fake', 'example', 'admin', 'user', 'no-reply', 'noreply', '1234'];
+    const lowerLocal = localPart.toLowerCase();
     
+    // Check if the username is JUST a blocked keyword + maybe some numbers
+    // e.g. "sample123" -> blocked, "samplesmith" -> might be okay but risky. 
+    // Let's be strict about the specific words requested.
+    for (const word of blockedKeywords) {
+      if (lowerLocal === word || lowerLocal.startsWith(word + '.') || lowerLocal.startsWith(word + '1') || lowerLocal === word + '123') {
+         return `Please enter a valid personal email address. '${word}' is not allowed.`;
+      }
+    }
+    
+    return null;
+  };
+
+  const handleEmailBlur = async () => {
+    if (!formData.email) return;
+
+    // 1. Content Validation
+    const contentError = validateEmailContent(formData.email);
+    if (contentError) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Email",
+        description: contentError,
+      });
+      return; // Stop here if format is wrong
+    }
+    
+    // 2. Existence Check
     const exists = await checkEmailExists(formData.email);
     if (exists) {
       toast({
@@ -78,6 +137,17 @@ const Register = () => {
         variant: "destructive",
         title: "Invalid Phone Number",
         description: "Please enter a 10-digit Indian phone number.",
+      });
+      return;
+    }
+
+    // Email Content Validation
+    const emailContentError = validateEmailContent(formData.email);
+    if (emailContentError) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Email",
+        description: emailContentError,
       });
       return;
     }
