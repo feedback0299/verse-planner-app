@@ -91,15 +91,15 @@ Deno.serve(async (req: Request) => {
           </p>
           <p style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
             <a href="https://athumanesarindia.com/" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://cdn-icons-png.flaticon.com/32/1006/1006771.png" width="16" height="16" style="margin-right: 5px;"> Website
+              <img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://athumanesarindia.com&size=64" width="20" height="20" style="margin-right: 5px; border-radius: 4px;"> Website
             </a>
             <span style="color: #e2e8f0;">|</span>
             <a href="https://www.youtube.com/@ATHUMANESARINDIA" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://cdn-icons-png.flaticon.com/32/1384/1384060.png" width="16" height="16" style="margin-right: 5px;"> Youtube
+              <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" width="20" height="20" style="margin-right: 5px;"> Youtube
             </a>
             <span style="color: #e2e8f0;">|</span>
             <a href="https://whatsapp.com/channel/0029VbBq0sV6BIErAtoINI2g" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://cdn-icons-png.flaticon.com/32/733/733585.png" width="16" height="16" style="margin-right: 5px;"> WhatsApp
+              <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="20" height="20" style="margin-right: 5px;"> WhatsApp
             </a>
           </p>
           <p>&copy; ${currentYear} Athumanesar India Ministries. All rights reserved.</p>
