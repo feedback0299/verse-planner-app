@@ -9,6 +9,7 @@ import { Loader2, CheckCircle2, Calendar, Trophy, User, Clock, RefreshCw } from 
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ChallengeCalendar from '@/components/ChallengeCalendar';
+import BranchSelectionPopup from '@/components/BranchSelectionPopup';
 
 const Planner = () => {
   const { toast } = useToast();
@@ -198,6 +199,13 @@ const Planner = () => {
           </div>
         </div>
 
+        {/* Tamil Instructions Note */}
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm">
+          <p className="text-amber-900 font-medium text-sm leading-relaxed" style={{ fontFamily: 'Noto Sans Tamil, sans-serif' }}>
+            📌 குறிப்பு: தொடர்ச்சியாக 70 நாட்களுக்கு ஒவ்வொரு நாளும் உள்நுழைந்து, பாப்-அப் சாளரத்தில் உள்ள செக்பாக்ஸை தேர்வு செய்து உங்கள் தினசரி முன்னேற்றத்தை பதிவு செய்ய வேண்டும். இதன் மூலம் மட்டுமே உங்கள் 70 நாள் பைபிள் வாசிப்பு சவால் முடிவடையும்.
+          </p>
+        </div>
+
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-gradient-to-br from-spiritual-blue to-blue-700 text-white border-none">
@@ -278,6 +286,14 @@ const Planner = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Mandatory Profile Update Popup */}
+      {profile && !profile.church_branch && (
+        <BranchSelectionPopup 
+          userId={profile.id} 
+          onComplete={() => queryClient.invalidateQueries({ queryKey: ['plannerProfile'] })} 
+        />
+      )}
     </div>
   );
 };

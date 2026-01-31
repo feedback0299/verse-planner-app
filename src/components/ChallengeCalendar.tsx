@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, Calendar as CalendarIcon, Trophy, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { format, isSameDay, addDays, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isAfter, isBefore, isToday } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/lib/dbService/supabase';
+import { useToast } from "@/hooks/use-toast";
 
 interface DayReading {
   day: number;
@@ -35,10 +39,14 @@ const ChallengeCalendar: React.FC<ChallengeCalendarProps> = ({
   userCategory 
 }) => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   // Initialize to Feb 2026 as per requirements
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [description, setDescription] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingDescription, setIsLoadingDescription] = useState(false);
 
   // Helper to determine if a date is within the 70 days
   const getDayNumber = (date: Date) => {
@@ -91,9 +99,102 @@ const ChallengeCalendar: React.FC<ChallengeCalendarProps> = ({
     }
   };
 
+  // Load description when dialog opens
+  useEffect(() => {
+    const loadDescription = async () => {
+      if (!selectedDay || !isDialogOpen) return;
+      
+      setIsLoadingDescription(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const readingDate = addDays(startDate, selectedDay - 1);
+        
+        const { data, error } = await supabase
+          .from('daily_reading_logs')
+          .select('description')
+          .eq('user_id', user.id)
+          .eq('contest_day', selectedDay)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading description:', error);
+        }
+        
+        setDescription(data?.description || '');
+      } catch (error) {
+        console.error('Error loading description:', error);
+      } finally {
+        setIsLoadingDescription(false);
+      }
+    };
+
+    loadDescription();
+  }, [selectedDay, isDialogOpen, startDate]);
+
+  const saveDescription = async () => {
+    if (!selectedDay) return;
+    
+    // Validate description is not empty
+    if (!description.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Description Required",
+        description: "Please enter your reading description before saving.",
+      });
+      return;
+    }
+
+    // Validate character limit
+    if (description.length > 1000) {
+      toast({
+        variant: "destructive",
+        title: "Description Too Long",
+        description: `Description must be 1000 characters or less. Current: ${description.length}`,
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const readingDate = addDays(startDate, selectedDay - 1);
+      
+      const { error } = await supabase
+        .from('daily_reading_logs')
+        .upsert({
+          user_id: user.id,
+          contest_day: selectedDay,
+          reading_date: format(readingDate, 'yyyy-MM-dd'),
+          description: description.trim()
+        }, {
+          onConflict: 'user_id,contest_day'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: `Day ${selectedDay} reading description saved.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: error.message || "Failed to save description.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const closeDialog = () => {
     setIsDialogOpen(false);
     setSelectedDay(null);
+    setDescription('');
   };
 
   const getReadingsForDay = (day: number) => {
@@ -344,6 +445,48 @@ const ChallengeCalendar: React.FC<ChallengeCalendarProps> = ({
                    No reading data found for this day.
                 </div>
              )}
+          </div>
+
+          {/* Reading Description Section */}
+          <div className="py-4 space-y-3 border-t">
+             <div className="flex items-center justify-between">
+               <Label htmlFor="reading-description" className="text-sm font-semibold text-slate-700">
+                 Reading Description <span className="text-red-500">*</span>
+               </Label>
+               <span className={`text-xs font-medium ${description.length > 1000 ? 'text-red-500' : 'text-slate-400'}`}>
+                 {description.length}/1000
+               </span>
+             </div>
+             
+             {isLoadingDescription ? (
+               <div className="flex items-center justify-center py-8">
+                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-spiritual-blue"></div>
+               </div>
+             ) : (
+               <Textarea
+                 id="reading-description"
+                 placeholder="Enter your reading notes, reflections, or learnings from today's portion... (Required)"
+                 value={description}
+                 onChange={(e) => setDescription(e.target.value)}
+                 className="min-h-[120px] resize-none border-slate-200 focus:border-spiritual-blue"
+                 maxLength={1000}
+               />
+             )}
+             
+             <Button 
+               onClick={saveDescription}
+               disabled={isSaving || !description.trim() || description.length > 1000}
+               className="w-full bg-spiritual-blue hover:bg-spiritual-blue/90"
+             >
+               {isSaving ? (
+                 <>
+                   <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                   Saving...
+                 </>
+               ) : (
+                 'Save Description'
+               )}
+             </Button>
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t">

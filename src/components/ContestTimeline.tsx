@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSunday, getDay, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, BookOpen, Star, Calendar as CalendarIcon, Hash } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, Star, Calendar as CalendarIcon, Hash, Edit, Save, X } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/lib/dbService/supabase';
 
 interface Reading {
   day: number;
@@ -16,16 +19,108 @@ interface Reading {
 
 interface ContestTimelineProps {
   readings: Reading[];
+  onReadingsUpdate?: () => void;
 }
 
-const ContestTimeline: React.FC<ContestTimelineProps> = ({ readings }) => {
+const ContestTimeline: React.FC<ContestTimelineProps> = ({ readings, onReadingsUpdate }) => {
   // Start date of the contest is fixed to Feb 1, 2026
   const contestStartDate = new Date(2026, 1, 1); 
   // Initial view starts at Feb 2026
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 1, 1));
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  // Form data for editing
+  const [editData, setEditData] = useState({
+    kids: {
+      psalms: '',
+      proverbs: '',
+      new_testament: ''
+    },
+    adult: {
+      old_testament: '',
+      psalms: '',
+      proverbs: '',
+      new_testament: ''
+    }
+  });
 
   const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const enterEditMode = (dayInfo: any) => {
+    setEditData({
+      kids: {
+        psalms: dayInfo.kidsPortion?.psalms || '',
+        proverbs: dayInfo.kidsPortion?.proverbs || '',
+        new_testament: dayInfo.kidsPortion?.new_testament || ''
+      },
+      adult: {
+        old_testament: dayInfo.adultPortion?.old_testament || '',
+        psalms: dayInfo.adultPortion?.psalms || '',
+        proverbs: dayInfo.adultPortion?.proverbs || '',
+        new_testament: dayInfo.adultPortion?.new_testament || ''
+      }
+    });
+    setIsEditMode(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditMode(false);
+  };
+
+  const saveChanges = async (dayNum: number) => {
+    setIsSaving(true);
+    try {
+      // Update Kids & Teens portion
+      const { error: kidsError } = await supabase
+        .from('contest_readings')
+        .upsert({
+          day: dayNum,
+          category: 'kids_teens',
+          psalms: editData.kids.psalms,
+          proverbs: editData.kids.proverbs,
+          new_testament: editData.kids.new_testament
+        }, { onConflict: 'day,category' });
+
+      if (kidsError) throw kidsError;
+
+      // Update Adults portion
+      const { error: adultError } = await supabase
+        .from('contest_readings')
+        .upsert({
+          day: dayNum,
+          category: 'adult',
+          old_testament: editData.adult.old_testament,
+          psalms: editData.adult.psalms,
+          proverbs: editData.adult.proverbs,
+          new_testament: editData.adult.new_testament
+        }, { onConflict: 'day,category' });
+
+      if (adultError) throw adultError;
+
+      toast({
+        title: "Success",
+        description: `Day ${dayNum} readings updated successfully.`,
+      });
+
+      setIsEditMode(false);
+      
+      // Refresh readings
+      if (onReadingsUpdate) {
+        onReadingsUpdate();
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update readings.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const getDayInfo = (date: Date) => {
     // Calculate Contest Day
@@ -185,6 +280,47 @@ const ContestTimeline: React.FC<ContestTimelineProps> = ({ readings }) => {
                       {selectedDayInfo.timing}
                     </CardDescription>
                   </div>
+                  
+                  {/* Edit Controls */}
+                  <div className="flex gap-2">
+                    {!isEditMode ? (
+                      <Button
+                        onClick={() => enterEditMode(selectedDayInfo)}
+                        className="bg-spiritual-blue hover:bg-spiritual-blue/90"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => saveChanges(selectedDayInfo.dayNum)}
+                          disabled={isSaving}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {isSaving ? (
+                            <>
+                              <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={cancelEdit}
+                          disabled={isSaving}
+                          variant="outline"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
              </CardHeader>
 
@@ -202,15 +338,51 @@ const ContestTimeline: React.FC<ContestTimelineProps> = ({ readings }) => {
                      <div className="flex flex-col gap-3 pl-2">
                         <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-blue-100 shadow-sm">
                            <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Psalms</div>
-                           <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.kidsPortion?.psalms || "—"}</p>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.kids.psalms}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 kids: { ...editData.kids, psalms: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Psalm 23"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.kidsPortion?.psalms || "—"}</p>
+                           )}
                         </div>
                         <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-blue-100 shadow-sm">
-                           <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Prov/NT</div>
-                           <p className="font-medium text-slate-700 text-lg">
-                             {selectedDayInfo.kidsPortion 
-                               ? `${selectedDayInfo.kidsPortion.proverbs || ''} ${selectedDayInfo.kidsPortion.new_testament || ''}` 
-                               : "—"}
-                           </p>
+                           <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Proverbs</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.kids.proverbs}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 kids: { ...editData.kids, proverbs: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Proverbs 3:1-10"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.kidsPortion?.proverbs || "—"}</p>
+                           )}
+                        </div>
+                        <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-blue-100 shadow-sm">
+                           <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">NT</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.kids.new_testament}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 kids: { ...editData.kids, new_testament: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Matthew 5:1-12"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.kidsPortion?.new_testament || "—"}</p>
+                           )}
                         </div>
                      </div>
                   </div>
@@ -225,23 +397,69 @@ const ContestTimeline: React.FC<ContestTimelineProps> = ({ readings }) => {
                      </div>
                      
                      <div className="flex flex-col gap-3 pl-2">
-                        {selectedDayInfo.adultPortion?.old_testament && (
-                          <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-orange-100 shadow-sm">
-                             <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">OT</div>
-                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion.old_testament}</p>
-                          </div>
-                        )}
                         <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-orange-100 shadow-sm">
-                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Psalms</div>
-                           <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion?.psalms || "—"}</p>
+                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">OT</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.adult.old_testament}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 adult: { ...editData.adult, old_testament: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Genesis 1:1-31"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion?.old_testament || "—"}</p>
+                           )}
                         </div>
                         <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-orange-100 shadow-sm">
-                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Prov/NT</div>
-                           <p className="font-medium text-slate-700 text-lg">
-                              {selectedDayInfo.adultPortion 
-                                ? `${selectedDayInfo.adultPortion.proverbs || ''} ${selectedDayInfo.adultPortion.new_testament || ''}` 
-                                : "—"}
-                           </p>
+                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Psalms</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.adult.psalms}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 adult: { ...editData.adult, psalms: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Psalm 119:1-16"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion?.psalms || "—"}</p>
+                           )}
+                        </div>
+                        <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-orange-100 shadow-sm">
+                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">Proverbs</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.adult.proverbs}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 adult: { ...editData.adult, proverbs: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Proverbs 10:1-15"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion?.proverbs || "—"}</p>
+                           )}
+                        </div>
+                        <div className="flex items-start gap-4 p-3 bg-white rounded-2xl border border-orange-100 shadow-sm">
+                           <div className="bg-orange-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider min-w-[60px] text-center mt-0.5">NT</div>
+                           {isEditMode ? (
+                             <Input
+                               value={editData.adult.new_testament}
+                               onChange={(e) => setEditData({
+                                 ...editData,
+                                 adult: { ...editData.adult, new_testament: e.target.value }
+                               })}
+                               className="font-medium text-slate-700 text-lg border-slate-200"
+                               placeholder="e.g., Romans 8:1-17"
+                             />
+                           ) : (
+                             <p className="font-medium text-slate-700 text-lg">{selectedDayInfo.adultPortion?.new_testament || "—"}</p>
+                           )}
                         </div>
                      </div>
                   </div>

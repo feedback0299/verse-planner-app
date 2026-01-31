@@ -16,6 +16,7 @@ import VideoRoom from "./pages/VideoRoom";
 import WorldMap from "./pages/WorldMap";
 import Globe3D from "./pages/Globe3D";
 import BranchAdmin from "./pages/BranchAdmin";
+
 import { VerseProvider } from "@/contexts/VerseContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Register from "@/pages/Register";
@@ -27,6 +28,7 @@ import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminAuthWrapper from "@/components/AdminAuthWrapper";
 import { authConfig } from "@/config/authConfig";
+import { useSessionTimeout } from "@/hooks/use-session-timeout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +45,9 @@ const AppContent = () => {
   const location = useLocation();
   const isVideoRoom = location.pathname.startsWith('/room/');
   const isAdmin = !!(localStorage.getItem('admin_session') || localStorage.getItem('magazine_admin_session'));
+
+  // Enable session timeout for authenticated users
+  useSessionTimeout();
 
   return (
     <>
@@ -61,6 +66,7 @@ const AppContent = () => {
             <Members />
           </AdminAuthWrapper>
         } />
+
         <Route path="/admin" element={
           <AdminAuthWrapper 
             title="Admin Dashboard" 
