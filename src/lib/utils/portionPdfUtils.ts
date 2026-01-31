@@ -210,10 +210,11 @@ const abbreviateTamilBookNames = (text: string): string => {
   return result;
 };
 
-const toTamilOnly = (text: string): string => {
+const cleanPortion = (text: string): string => {
   if (!text) return text;
-  // Globally replace anything that looks like an English prefix (English letters, dots, spaces, numbers followed by /)
-  return text.replace(/[^/,\u0B80-\u0BFF]+\//g, '').trim();
+  // Previously we stripped English prefixes like "Matthew 1 / ".
+  // Now we keep them to display English data in the PDF.
+  return text.trim();
 };
 
 /**
@@ -223,7 +224,7 @@ const toTamilOnly = (text: string): string => {
 const mergePortions = (portions: (string | null | undefined)[], category?: 'kids_teens' | 'adult'): string => {
   let result = portions
     .filter(p => !!p)
-    .map(p => toTamilOnly(String(p)))
+    .map(p => cleanPortion(String(p)))
     .join(', ');
   
   // Apply abbreviations only for Kids & Teens to save space
