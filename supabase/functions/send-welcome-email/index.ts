@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +11,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { full_name, email, recipients } = await req.json();
+    const { full_name, email } = await req.json();
+    const name = full_name || "சகோதரரே / சகோதரியே";
+
+    if (!email) {
+      throw new Error("Email is required");
+    }
 
     const SMTP_USER = Deno.env.get("SMTP_USER");
     const SMTP_PASS = Deno.env.get("SMTP_PASS");
@@ -30,9 +35,10 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const getHtml = (name: string) => {
-        const currentYear = new Date().getFullYear();
-        return `
+    const currentYear = new Date().getFullYear();
+    const subject = "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.";
+    
+    const html = `
       <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px;">
         <h2 style="color: #1e3a8a;">அன்புள்ள ${name},</h2>
         
@@ -83,65 +89,68 @@ Deno.serve(async (req: Request) => {
           <p style="margin-bottom: 10px;">
             Athumanesar Ministries, 17, Manickam Nagar, M.C. Road, Thanjavur - 613007, TN, INDIA
           </p>
-          <p style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <a href="https://athumanesarindia.com/" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://athumanesarindia.com&size=64" width="20" height="20" style="margin-right: 5px; border-radius: 4px;"> Website
-            </a>
-            <span style="color: #e2e8f0;">|</span>
-            <a href="https://www.youtube.com/@ATHUMANESARINDIA" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" width="20" height="20" style="margin-right: 5px;"> Youtube
-            </a>
-            <span style="color: #e2e8f0;">|</span>
-            <a href="https://whatsapp.com/channel/0029VbBq0sV6BIErAtoINI2g" style="color: #64748b; text-decoration: none; display: inline-flex; align-items: center;">
-              <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="20" height="20" style="margin-right: 5px;"> WhatsApp
-            </a>
-          </p>
-          <p>&copy; ${currentYear} Athumanesar India Ministries. All rights reserved.</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 10px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="padding: 0 10px;">
+                      <a href="https://athumanesarindia.com/" style="color: #64748b; text-decoration: none; font-size: 0.8rem; vertical-align: middle;">
+                        <img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://athumanesarindia.com&size=64" width="18" height="18" style="margin-right: 5px; border-radius: 4px; vertical-align: middle;">
+                        Website
+                      </a>
+                    </td>
+                    <td style="color: #e2e8f0;">|</td>
+                    <td style="padding: 0 10px;">
+                      <a href="https://www.youtube.com/@ATHUMANESARINDIA" style="color: #64748b; text-decoration: none; font-size: 0.8rem; vertical-align: middle;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png" width="18" height="18" style="margin-right: 5px; vertical-align: middle;">
+                        Youtube
+                      </a>
+                    </td>
+                    <td style="color: #e2e8f0;">|</td>
+                    <td style="padding: 0 10px;">
+                      <a href="https://whatsapp.com/channel/0029VbBq0sV6BIErAtoINI2g" style="color: #64748b; text-decoration: none; font-size: 0.8rem; vertical-align: middle;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="18" height="18" style="margin-right: 5px; vertical-align: middle;">
+                        WhatsApp
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </div>
 
         <div style="text-align: center; margin-top: 2rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px dashed #e2e8f0;">
           <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">70-Day Bible Reading Contest Portal</h4>
           <p style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.75rem;">(Scan to login or click the link)</p>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://preview--verse-planner-app.lovable.app/login" alt="QR Code" style="margin-bottom: 1rem; border: 4px solid white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 80px; height: 80px;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://preview--verse-planner-app.lovable.app/login" alt="QR Code" style="margin-bottom: 1rem; border: 4px solid white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100px; height: 100px;">
           <br>
           <a href="https://preview--verse-planner-app.lovable.app/login" style="background: #1e3a8a; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 0.4rem; font-size: 0.85rem; font-weight: bold; display: inline-block;">Login to Planner</a>
         </div>
+
+        <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #f1f5f9;">
+          <p style="color: #1e3a8a; font-weight: bold; letter-spacing: 2px; font-size: 0.9rem; margin-bottom: 5px;">
+            COPYRIGHTS RESERVED
+          </p>
+          <p style="color: #475569; font-weight: 600; font-size: 0.85rem; margin: 0;">
+            UNITED CHRISTIAN BELIEVERS FELLOWSHIP (UCBF)
+          </p>
+          <p style="color: #94a3b8; font-size: 0.7rem; margin-top: 10px;">
+            &copy; ${currentYear} Athumanesar India Ministries. All rights reserved.
+          </p>
+        </div>
       </div>
     `;
-    };
 
-    // Determine target recipients (batch or single)
-    const targetRecipients = recipients || (email ? [{ full_name, email }] : []);
-    
-    if (targetRecipients.length === 0) {
-       throw new Error("No recipients provided");
-    }
+    await transporter.sendMail({
+      from: SMTP_USER,
+      to: email,
+      subject: subject,
+      html: html,
+    });
 
-    const results = [];
-    
-    // Process sequentially to respect rate limits per connection
-    for (const recipient of targetRecipients) {
-        if (!recipient.email) continue;
-        
-        try {
-            await transporter.sendMail({
-                from: SMTP_USER,
-                to: recipient.email,
-                subject: "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.",
-                html: getHtml(recipient.full_name || "Participant"),
-            });
-            results.push({ email: recipient.email, status: 'success' });
-            console.log(`Sent to ${recipient.email}`);
-        } catch (error: any) {
-            console.error(`Failed to send to ${recipient.email}:`, error);
-            results.push({ email: recipient.email, status: 'error', error: error.message });
-        }
-        
-        // Small delay between emails to respect rate limits (Google: ~1 per sec recommended for burst)
-        await new Promise(resolve => setTimeout(resolve, 1500));
-    }
-
-    return new Response(JSON.stringify({ success: true, results }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
@@ -151,5 +160,4 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
 });
