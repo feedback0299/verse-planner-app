@@ -287,8 +287,6 @@ const Admin = () => {
         }
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
-    const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const BATCH_SIZE = 5;
 
@@ -307,11 +305,12 @@ const Admin = () => {
                 validRecipients.push({ 
                     full_name: p.full_name || p.username || "Participant", 
                     email: p.email,
-                    id: p.id // Keep ID for reference if needed
+                    id: p.id
                 });
             }
         }
 
+        if (validRecipients.length > 0) {
             // 2. Add to Queue Batch
             const queueInserts = validRecipients.map(recipient => ({
                 recipient_email: recipient.email,
@@ -329,13 +328,13 @@ const Admin = () => {
                 console.error("Queue Insert Error:", queueError);
                 failCount += validRecipients.length;
                 currentFailures.push({ email: "Batch", reason: `Queue DB Error: ${queueError.message}` });
-                 setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length })); // mark as processed (failed)
+                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
             } else {
                 successCount += validRecipients.length;
-                // We mark success here as "Queued successfully"
-                 setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
+                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
             }
         }
+    }
     
     // Trigger Worker to start processing immediately
     try {
