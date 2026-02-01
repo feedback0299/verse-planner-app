@@ -495,7 +495,15 @@ const ChallengeCalendar: React.FC<ChallengeCalendarProps> = ({
                   id="mark-complete" 
                   checked={selectedDay ? progress[selectedDay - 1] === '1' : false}
                   onCheckedChange={() => selectedDay && onCheckIn(selectedDay)}
-                  disabled={isCheckingIn || (selectedDay !== null && selectedDay > getDayNumber(new Date()))}
+                  // Disable if: 
+                  // 1. Syncing
+                  // 2. Future date
+                  // 3. Not checked AND Description is empty (Require description to check)
+                  disabled={
+                    isCheckingIn || 
+                    (selectedDay !== null && selectedDay > getDayNumber(new Date())) ||
+                    (!progress[selectedDay! - 1] || progress[selectedDay! - 1] === '0') && !description.trim()
+                  }
                   className="h-5 w-5 border-2 border-spiritual-blue data-[state=checked]:bg-spiritual-blue"
                 />
                 <label 
@@ -509,6 +517,12 @@ const ChallengeCalendar: React.FC<ChallengeCalendarProps> = ({
                     <span className="block text-xs text-red-400 font-normal mt-1">
                       Available on {format(addDays(startDate, selectedDay - 1), 'MMM d')}
                     </span>
+                  )}
+                  {/* Warning if description is missing */}
+                  {selectedDay !== null && selectedDay <= getDayNumber(new Date()) && (!progress[selectedDay - 1] || progress[selectedDay - 1] === '0') && !description.trim() && (
+                     <span className="block text-xs text-orange-500 font-normal mt-1">
+                       * Enter description to enable check-in
+                     </span>
                   )}
                 </label>
              </div>
