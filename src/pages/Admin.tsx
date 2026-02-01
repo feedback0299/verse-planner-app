@@ -57,6 +57,14 @@ const Admin = () => {
     onConfirm: () => {},
   });
 
+  const [broadcastReport, setBroadcastReport] = useState<{
+    isOpen: boolean;
+    failures: { email: string; reason: string }[];
+  }>({
+    isOpen: false,
+    failures: [],
+  });
+
   useEffect(() => {
     fetchParticipants();
     fetchContestReadings();
@@ -260,7 +268,11 @@ const Admin = () => {
 
     let successCount = 0;
     let failCount = 0;
-    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length; 
+    let invalidCount = 0;
+    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length;
+    
+    // Track detailed failures for report
+    let currentFailures: { email: string; reason: string }[] = [];
 
     // Prepare headers once
     const isBypass = localStorage.getItem('admin_bypass') === 'true';
@@ -275,53 +287,84 @@ const Admin = () => {
         }
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
-    const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const BATCH_SIZE = 5;
 
-    for (let i = 0; i < participantsToEmail.length; i++) {
-        const p = participantsToEmail[i];
-        setBroadcastProgress(prev => ({ ...prev, current: i + 1 }));
-
-        try {
-            // 2. Send via Manual Fetch
-            const response = await fetch(functionUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...headers
-                },
-                body: JSON.stringify({ full_name: p.full_name, email: p.email })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Status ${response.status}`);
+    for (let i = 0; i < participantsToEmail.length; i += BATCH_SIZE) {
+        const chunk = participantsToEmail.slice(i, i + BATCH_SIZE);
+        
+        // Prepare valid recipients for this batch
+        const validRecipients = [];
+        for (const p of chunk) {
+            if (!p.email || !emailRegex.test(p.email)) {
+                console.warn(`Skipping invalid email: ${p.email}`);
+                invalidCount++;
+                currentFailures.push({ email: p.email || "Unknown", reason: "Invalid Email Format" });
+                setBroadcastProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            } else {
+                validRecipients.push({ 
+                    full_name: p.full_name || p.username || "Participant", 
+                    email: p.email,
+                    id: p.id
+                });
             }
-
-            // 3. Mark as Sent in DB
-            const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ welcome_email_sent: true })
-                .eq('id', p.id);
-
-            if (updateError) {
-                console.error(`Email sent but failed to update status for ${p.email}`, updateError);
-            }
-
-            successCount++;
-        } catch (err: any) {
-            console.error(`Failed to send email to ${p.email}:`, err);
-            failCount++;
         }
+
+        if (validRecipients.length > 0) {
+            // 2. Add to Queue Batch
+            const queueInserts = validRecipients.map(recipient => ({
+                recipient_email: recipient.email,
+                recipient_name: recipient.full_name,
+                subject: "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.",
+                status: 'pending',
+                scheduled_for: new Date().toISOString() // Send "Now"
+            }));
+
+            const { error: queueError } = await supabase
+                .from('mail_queue')
+                .insert(queueInserts);
+
+            if (queueError) {
+                console.error("Queue Insert Error:", queueError);
+                failCount += validRecipients.length;
+                currentFailures.push({ email: "Batch", reason: `Queue DB Error: ${queueError.message}` });
+                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
+            } else {
+                successCount += validRecipients.length;
+                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
+            }
+        }
+    }
+    
+    // Trigger Worker to start processing immediately
+    try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
+        await fetch(`${supabaseUrl}/functions/v1/process-email-queue`, {
+            method: 'POST',
+             headers: {
+                ...headers,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}) // Just trigger
+        });
+        toast({ title: "Broadcast Queued", description: "Emails have been added to the queue and will be processed in the background." });
+    } catch (e) {
+        console.warn("Could not trigger worker automatically, it will run on schedule", e);
     }
 
     setBroadcasting(false);
     toast({
-        title: "Broadcast Complete",
-        description: `Sent: ${successCount}. Failed: ${failCount}. Skipped: ${alreadySentCount}.`,
-        variant: successCount > 0 ? "default" : "destructive"
+        title: "Broadcast Queued",
+        description: `${successCount} emails added to queue. They are sending in the background. Failures: ${failCount}.`,
+        variant: "default"
     });
     
-    // Refresh list to show updated status
+    // Open Failure Report only for insert errors
+    if (currentFailures.length > 0) {
+        setBroadcastReport({ isOpen: true, failures: currentFailures });
+    }
+    
+    // Refresh list 
     fetchParticipants();
   };
 
@@ -1100,13 +1143,45 @@ const Admin = () => {
              <DialogContent className="sm:max-w-[425px]">
                  <DialogHeader>
                      <DialogTitle>{confirmDialog.title}</DialogTitle>
-                     <DialogDescription>
-                        {confirmDialog.description}
+                     <DialogDescription asChild>
+                        <div className="text-sm text-muted-foreground">
+                            {confirmDialog.description}
+                        </div>
                      </DialogDescription>
                  </DialogHeader>
                  <DialogFooter className="gap-2 sm:gap-0">
                      <Button variant="outline" onClick={() => setConfirmDialog(prev => ({...prev, isOpen: false }))}>Cancel</Button>
                      <Button onClick={confirmDialog.onConfirm}>{confirmDialog.confirmLabel || "Confirm"}</Button>
+                 </DialogFooter>
+             </DialogContent>
+         </Dialog>
+
+         {/* Broadcast Failure Report */}
+         <Dialog open={broadcastReport.isOpen} onOpenChange={(open) => setBroadcastReport(prev => ({ ...prev, isOpen: open }))}>
+             <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+                 <DialogHeader>
+                     <DialogTitle className="text-red-600 flex items-center gap-2">
+                         <AlertCircleIcon className="w-5 h-5" />
+                         Transmission Issues Report
+                     </DialogTitle>
+                     <DialogDescription asChild>
+                         <div className="text-muted-foreground text-sm">
+                            The following {broadcastReport.failures.length} emails could not be sent. Please review them.
+                         </div>
+                     </DialogDescription>
+                 </DialogHeader>
+                 
+                 <div className="flex-1 overflow-y-auto border rounded-md p-2 mt-2 bg-slate-50 space-y-1">
+                     {broadcastReport.failures.map((fail, idx) => (
+                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 bg-white border rounded shadow-sm text-sm gap-1">
+                             <span className="font-semibold text-slate-800">{fail.email}</span>
+                             <span className="text-red-500 font-medium text-xs">{fail.reason}</span>
+                         </div>
+                     ))}
+                 </div>
+
+                 <DialogFooter>
+                     <Button onClick={() => setBroadcastReport(prev => ({ ...prev, isOpen: false }))}>Close Report</Button>
                  </DialogFooter>
              </DialogContent>
          </Dialog>

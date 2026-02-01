@@ -1,9 +1,9 @@
 export const authConfig = {
   admin: async (email: string, pass: string) => {
-    if (email === 'admin' && pass === 'ChurchAdmin') {
+    if ((email === 'admin' || email === 'athumanesarindia.tech@gmail.com') && pass === 'ChurchAdmin') {
       return { 
         success: true, 
-        session: { user: { email: 'admin', name: 'Church Admin' } },
+        session: { user: { email: email, name: 'Church Admin' } },
         message: "Welcome Admin"
       };
     }

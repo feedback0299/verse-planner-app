@@ -245,12 +245,67 @@ const Register = () => {
 
         // 5. Send Welcome Email
         try {
-          await supabase.functions.invoke('send-welcome-email', {
+          const { data: emailData, error: emailFuncError } = await supabase.functions.invoke('send-welcome-email', {
             body: { full_name: formData.fullName, email: formData.email }
           });
+
+          if (emailFuncError || (emailData && !emailData.success)) {
+             console.warn("Welcome email API reported issue:", emailFuncError || emailData);
+             
+             // Fallback to Queue
+             const { error: queueError } = await supabase
+                .from('mail_queue')
+                .insert([{
+                    recipient_email: formData.email,
+                    recipient_name: formData.fullName,
+                    subject: "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.",
+                    status: 'pending',
+                    scheduled_for: new Date(Date.now() + 1000 * 60 * 5).toISOString() // Retry in 5 mins
+                }]);
+                
+             if (!queueError) {
+                 toast({
+                   title: "Account Created",
+                   description: "Welcome email has been queued and will be sent shortly.",
+                 });
+                 // Trigger Worker
+                 try {
+                    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
+                    fetch(`${supabaseUrl}/functions/v1/process-email-queue`, { method: 'POST', body: JSON.stringify({}), headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` } }).catch(() => {});
+                 } catch(e) {}
+             } else {
+                 toast({
+                   variant: "destructive",
+                   title: "Account Created, but Email Failed",
+                   description: "We couldn't send the welcome email. Please contact support.",
+                 });
+             }
+          }
         } catch (emailErr) {
-          console.error("Welcome email failed:", emailErr);
-          // Non-blocking for the user
+          console.error("Welcome email failed - attempting queue:", emailErr);
+          // Fallback to Queue
+             const { error: queueError } = await supabase
+                .from('mail_queue')
+                .insert([{
+                    recipient_email: formData.email,
+                    recipient_name: formData.fullName,
+                    subject: "Welcome to 70-Day Bible Reading Challenge",
+                    status: 'pending',
+                    scheduled_for: new Date(Date.now() + 1000 * 60 * 5).toISOString()
+                }]);
+                
+             if (!queueError) {
+                  toast({
+                   title: "Account Created",
+                   description: "Welcome email has been queued and will be sent shortly.",
+                 });
+             } else {
+                toast({
+                    variant: "destructive",
+                    title: "Email Delivery Failed",
+                    description: "Your account is active, but we couldn't send the welcome email.",
+                });
+             }
         }
 
         toast({
