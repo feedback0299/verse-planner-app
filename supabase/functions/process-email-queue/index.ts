@@ -254,7 +254,30 @@ Deno.serve(async (req: Request) => {
       console.log(`Rescheduled ${count} remaining items to ${tomorrow.toISOString()}`);
     }
 
-    return new Response(JSON.stringify({ success: true, results, quotaExceeded }), {
+    // 6. RECURSION: Check if more pending items exist
+    const { count: pendingCount } = await supabase
+      .from('mail_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString());
+
+    // If more pending items exist and we didn't hit a quota limit, trigger again
+    if (pendingCount && pendingCount > 0 && !quotaExceeded) {
+      console.log(`Remaining pending items: ${pendingCount}. Triggering next batch...`);
+      
+      // Fire and forget fetch to self
+      const functionsUrl = `${req.url}`; // Use current URL to re-trigger
+      fetch(functionsUrl, {
+          method: 'POST',
+          headers: { 
+            "Authorization": req.headers.get("Authorization") || "", // Pass auth if available
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({})
+      }).catch(err => console.error("Failed to trigger next batch:", err));
+    }
+
+    return new Response(JSON.stringify({ success: true, results, quotaExceeded, remaining: pendingCount }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
