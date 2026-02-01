@@ -16,6 +16,7 @@ import MonthlyPlanner from '@/components/MonthlyPlanner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, Link } from 'react-router-dom';
 import { generateReadingPDF, getReadingPdfBlobUrl, generateAttendancePDF, getAttendancePdfBlobUrl } from '@/lib/utils/portionPdfUtils';
+import { generateParticipantsListPDF } from '@/lib/utils/participantsPdfUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const Admin = () => {
@@ -519,18 +520,23 @@ const Admin = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-all border-t-4 border-t-spiritual-blue bg-white">
+            <Card 
+              className="group cursor-pointer hover:shadow-xl transition-all border-t-4 border-t-spiritual-blue bg-white"
+              onClick={() => generateParticipantsListPDF(participants)}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl flex items-center gap-3 text-slate-900">
-                  <div className="bg-spiritual-blue/10 p-2 rounded-lg text-spiritual-blue">
-                    <Users className="w-6 h-6" />
+                  <div className="bg-spiritual-blue/10 p-2 rounded-lg text-spiritual-blue group-hover:bg-spiritual-blue/20 transition-colors">
+                    <DownloadIcon className="w-6 h-6" />
                   </div>
-                  Member Registry
+                  Participants List
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500 leading-relaxed">View and manage church member registrations and profiles.</p>
-                <Button variant="link" className="p-0 h-auto mt-4 text-spiritual-blue font-bold">Coming Soon</Button>
+                <p className="text-sm text-slate-500 leading-relaxed">Download the complete list of registered members as a PDF with church details.</p>
+                <div className="mt-6 flex items-center text-sm font-bold text-spiritual-blue group-hover:gap-2 transition-all">
+                  Download PDF <span>↓</span>
+                </div>
               </CardContent>
             </Card>
 
@@ -613,6 +619,7 @@ const Admin = () => {
                                     </>
                                 )}
                             </Button>
+
                             <Button 
                                 onClick={handleTestEmail} 
                                 variant="outline" 

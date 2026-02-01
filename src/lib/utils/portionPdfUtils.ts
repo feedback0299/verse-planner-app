@@ -30,7 +30,11 @@ if (typeof document !== 'undefined') {
  * Renders text to a Data URL using the browser's native shaping engine.
  * This is the only way to get perfect Tamil in jsPDF.
  */
-const renderTextToImage = (text: string, fontSize: number, color: string = '#000000'): { data: string; width: number; height: number } | null => {
+/**
+ * Renders text to a Data URL using the browser's native shaping engine.
+ * This is the only way to get perfect Tamil in jsPDF.
+ */
+export const renderTextToImage = (text: string, fontSize: number, color: string = '#000000'): { data: string; width: number; height: number } | null => {
   if (typeof document === 'undefined' || !text) return null;
 
   const canvas = document.createElement('canvas');
@@ -74,7 +78,7 @@ const renderTextToImage = (text: string, fontSize: number, color: string = '#000
  * Measures and splits text into lines using the Canvas engine.
  * Bypasses jsPDF's measurement issues with custom fonts.
  */
-const splitTextUsingCanvas = (text: string, fontSize: number, maxWidthMm: number): string[] => {
+export const splitTextUsingCanvas = (text: string, fontSize: number, maxWidthMm: number): string[] => {
   if (typeof document === 'undefined' || !text) return [text];
   
   const canvas = document.createElement('canvas');
@@ -236,9 +240,9 @@ const mergePortions = (portions: (string | null | undefined)[], category?: 'kids
 };
 
 /**
- * Helper to handle the common logic of drawing Tamil text in a cell
+ * Helper to handle the common logexport ic of drawing Tamil text in a cell
  */
-const handleTamilCellDrawing = (data: any, doc: any) => {
+export const handleTamilCellDrawing = (data: any, doc: any) => {
   if (data.cell.section === 'body' || data.cell.section === 'head') {
     const lines = (data.cell as any)._tamilLines;
     
