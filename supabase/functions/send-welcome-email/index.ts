@@ -11,11 +11,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { full_name, email } = await req.json();
-
-    if (!email) {
-      throw new Error("Email is required");
-    }
+    const { full_name, email, recipients } = await req.json();
 
     const SMTP_USER = Deno.env.get("SMTP_USER");
     const SMTP_PASS = Deno.env.get("SMTP_PASS");
@@ -34,13 +30,11 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const currentYear = new Date().getFullYear();
-    const subject = "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.";
-    
-    // Construct HTML content
-    const html = `
+    const getHtml = (name: string) => {
+        const currentYear = new Date().getFullYear();
+        return `
       <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px;">
-        <h2 style="color: #1e3a8a;">அன்புள்ள ${full_name},</h2>
+        <h2 style="color: #1e3a8a;">அன்புள்ள ${name},</h2>
         
         <p> நம் ஆண்டவராகிய <strong>இயேசு கிறிஸ்துவின் நாமத்தில் அப்போஸ்தலர். டி. ஆசீர்வாதம்</strong> அவர்களின் வாழ்த்துக்கள்.</p>
         
@@ -62,7 +56,7 @@ Deno.serve(async (req: Request) => {
         
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 2rem 0;">
         
-        <h2 style="color: #1e3a8a;">Dear ${full_name},</h2>
+        <h2 style="color: #1e3a8a;">Dear ${name},</h2>
         
         <p>Greetings from <strong>Apostle. D. Asirvatham in the name of our Lord Jesus Christ.</strong></p>
         
@@ -108,21 +102,46 @@ Deno.serve(async (req: Request) => {
         <div style="text-align: center; margin-top: 2rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px dashed #e2e8f0;">
           <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem;">70-Day Bible Reading Contest Portal</h4>
           <p style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.75rem;">(Scan to login or click the link)</p>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://athumanesarindia.com/login" alt="QR Code" style="margin-bottom: 1rem; border: 4px solid white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100px; height: 100px;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://preview--verse-planner-app.lovable.app/login" alt="QR Code" style="margin-bottom: 1rem; border: 4px solid white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100px; height: 100px;">
           <br>
           <a href="https://preview--verse-planner-app.lovable.app/login" style="background: #1e3a8a; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 0.4rem; font-size: 0.85rem; font-weight: bold; display: inline-block;">Login to Planner</a>
         </div>
       </div>
     `;
+    };
 
-    await transporter.sendMail({
-      from: SMTP_USER,
-      to: email,
-      subject: subject,
-      html: html,
-    });
+    // Determine target recipients (batch or single)
+    const targetRecipients = recipients || (email ? [{ full_name, email }] : []);
+    
+    if (targetRecipients.length === 0) {
+       throw new Error("No recipients provided");
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
+    const results = [];
+    
+    // Process sequentially to respect rate limits per connection
+    for (const recipient of targetRecipients) {
+        if (!recipient.email) continue;
+        
+        try {
+            await transporter.sendMail({
+                from: SMTP_USER,
+                to: recipient.email,
+                subject: "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.",
+                html: getHtml(recipient.full_name || "Participant"),
+            });
+            results.push({ email: recipient.email, status: 'success' });
+            console.log(`Sent to ${recipient.email}`);
+        } catch (error: any) {
+            console.error(`Failed to send to ${recipient.email}:`, error);
+            results.push({ email: recipient.email, status: 'error', error: error.message });
+        }
+        
+        // Small delay between emails to respect rate limits (Google: ~1 per sec recommended for burst)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+
+    return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
