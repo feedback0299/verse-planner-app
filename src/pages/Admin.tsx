@@ -269,8 +269,6 @@ const Admin = () => {
 
     let successCount = 0;
     let failCount = 0;
-    let invalidCount = 0;
-    const alreadySentCount = participants.filter(p => !!p.email && p.welcome_email_sent).length;
     
     // Track detailed failures for report
     let currentFailures: { email: string; reason: string }[] = [];
@@ -289,78 +287,70 @@ const Admin = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const BATCH_SIZE = 5;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
+    const functionUrl = `${supabaseUrl}/functions/v1/send-welcome-email`;
 
-    for (let i = 0; i < participantsToEmail.length; i += BATCH_SIZE) {
-        const chunk = participantsToEmail.slice(i, i + BATCH_SIZE);
-        
-        // Prepare valid recipients for this batch
-        const validRecipients = [];
-        for (const p of chunk) {
-            if (!p.email || !emailRegex.test(p.email)) {
-                console.warn(`Skipping invalid email: ${p.email}`);
-                invalidCount++;
-                currentFailures.push({ email: p.email || "Unknown", reason: "Invalid Email Format" });
-                setBroadcastProgress(prev => ({ ...prev, current: prev.current + 1 }));
-            } else {
-                validRecipients.push({ 
+    // Process Loop
+    for (const p of participantsToEmail) {
+        // Validate Email Format
+        if (!p.email || !emailRegex.test(p.email)) {
+            console.warn(`Skipping invalid email: ${p.email}`);
+            failCount++;
+            currentFailures.push({ email: p.email || "Unknown", reason: "Invalid Email Format" });
+            setBroadcastProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            continue;
+        }
+
+        try {
+            // Direct Edge Function Call (mimicking Test Email)
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...headers
+                },
+                body: JSON.stringify({ 
                     full_name: p.full_name || p.username || "Participant", 
-                    email: p.email,
-                    id: p.id
-                });
+                    email: p.email 
+                })
+            });
+
+            if (!response.ok) {
+                 const errorText = await response.text();
+                 throw new Error(`Function Error: ${response.status} ${errorText}`);
             }
+
+            // Success - Update DB locally
+            const { error: dbError } = await supabase
+              .from('profiles')
+              .update({ welcome_email_sent: true })
+              .eq('email', p.email);
+
+            if (dbError) console.error("Could not update status locally", dbError);
+
+            successCount++;
+
+        } catch (error: any) {
+            console.error(`Failed to send to ${p.email}:`, error);
+            failCount++;
+            currentFailures.push({ email: p.email, reason: error.message || "Sending Failed" });
         }
 
-        if (validRecipients.length > 0) {
-            // 2. Add to Queue Batch
-            const queueInserts = validRecipients.map(recipient => ({
-                recipient_email: recipient.email,
-                recipient_name: recipient.full_name,
-                subject: "தேவ கிருபையினால் 70 நாட்களில் வேதாகம வாசிப்பு முயற்சி / 70-day journey of reading the Bible by God’s grace.",
-                status: 'pending',
-                scheduled_for: new Date().toISOString() // Send "Now"
-            }));
-
-            const { error: queueError } = await supabase
-                .from('mail_queue')
-                .insert(queueInserts);
-
-            if (queueError) {
-                console.error("Queue Insert Error:", queueError);
-                failCount += validRecipients.length;
-                currentFailures.push({ email: "Batch", reason: `Queue DB Error: ${queueError.message}` });
-                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
-            } else {
-                successCount += validRecipients.length;
-                setBroadcastProgress(prev => ({ ...prev, current: prev.current + validRecipients.length }));
-            }
-        }
+        // Update Progress
+        setBroadcastProgress(prev => ({ ...prev, current: prev.current + 1 }));
+        
+        // Small Delay to prevent Rate Limiting (500ms)
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    // Trigger Worker to start processing immediately
-    try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rwafjkkdflwfcuuhqepv.supabase.co';
-        await fetch(`${supabaseUrl}/functions/v1/process-email-queue`, {
-            method: 'POST',
-             headers: {
-                ...headers,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}) // Just trigger
-        });
-        toast({ title: "Broadcast Queued", description: "Emails have been added to the queue and will be processed in the background." });
-    } catch (e) {
-        console.warn("Could not trigger worker automatically, it will run on schedule", e);
-    }
-
     setBroadcasting(false);
     toast({
-        title: "Broadcast Queued",
-        description: `${successCount} emails added to queue. They are sending in the background. Failures: ${failCount}.`,
-        variant: "default"
+        title: "Broadcast Completed",
+        description: `Backend Check: ${successCount} sent successfully. ${failCount} failed.`,
+        variant: failCount > 0 ? "destructive" : "default"
     });
     
-    // Open Failure Report only for insert errors
+    // Open Failure Report only for errors
     if (currentFailures.length > 0) {
         setBroadcastReport({ isOpen: true, failures: currentFailures });
     }
